@@ -317,8 +317,8 @@ ldap get-users -ou "OU=Employees,DC=corp,DC=local"
 
 ## Credits
 
-#### (Adaptix C2)[https://github.com/Adaptix-Framework/AdaptixC2]
-#### (bloodyAD)[https://github.com/CravateRouge/bloodyAD]
+#### [Adaptix C2](https://github.com/Adaptix-Framework/AdaptixC2)
+#### [bloodyAD](https://github.com/CravateRouge/bloodyAD)
 
 ## Disclaimer
 
