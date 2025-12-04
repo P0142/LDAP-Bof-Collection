@@ -29,20 +29,15 @@ void go(char *args, int alen) {
         return;
     }
     
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Starting LDAP group membership addition");
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Member: %s %s", memberIdentifier, isMemberDN ? "(DN)" : "(name)");
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Group: %s %s", groupIdentifier, isGroupDN ? "(DN)" : "(name)");
     
     if (searchOu && MSVCRT$strlen(searchOu) > 0) {
         BeaconPrintf(CALLBACK_OUTPUT, "[*] Search OU: %s", searchOu);
     }
     
     if (dcAddress && MSVCRT$strlen(dcAddress) > 0) {
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Domain Controller: %s", dcAddress);
     }
     
     if (useLdaps) {
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Using LDAPS (port 636)");
     }
     
     // Initialize LDAP connection
@@ -77,10 +72,8 @@ void go(char *args, int alen) {
         if (memberDN) {
             MSVCRT$strcpy(memberDN, memberIdentifier);
         }
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Using provided member DN: %s", memberDN);
     } else {
         // Search for member by sAMAccountName
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Resolving member DN...");
         char* searchBase = (searchOu && MSVCRT$strlen(searchOu) > 0) ? searchOu : defaultNC;
         memberDN = FindObjectDN(ld, memberIdentifier, searchBase);
         
@@ -102,10 +95,8 @@ void go(char *args, int alen) {
         if (groupDN) {
             MSVCRT$strcpy(groupDN, groupIdentifier);
         }
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Using provided group DN: %s", groupDN);
     } else {
         // Search for group by sAMAccountName
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Resolving group DN...");
         char* searchBase = (searchOu && MSVCRT$strlen(searchOu) > 0) ? searchOu : defaultNC;
         groupDN = FindObjectDN(ld, groupIdentifier, searchBase);
         
@@ -160,5 +151,4 @@ void go(char *args, int alen) {
     if (groupDN) MSVCRT$free(groupDN);
     CleanupLDAP(ld);
     
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Operation complete");
 }

@@ -21,7 +21,6 @@ void go(char *args, int alen) {
         return;
     }
     
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Starting OU creation");
     BeaconPrintf(CALLBACK_OUTPUT, "[*] OU identifier: %s %s", ouIdentifier, isOuDN ? "(DN)" : "(name)");
     
     if (description && MSVCRT$strlen(description) > 0) {
@@ -90,7 +89,6 @@ void go(char *args, int alen) {
         }
     }
     
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Target DN: %s", ouDN);
     BeaconPrintf(CALLBACK_OUTPUT, "[*] OU name: %s", ouName);
     
     // Prepare attributes for OU creation
@@ -176,5 +174,4 @@ void go(char *args, int alen) {
     MSVCRT$free(defaultNC);
     MSVCRT$free(dcHostname);
     CleanupLDAP(ld);
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Operation complete");
 }

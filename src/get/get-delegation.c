@@ -21,9 +21,6 @@ void go(char *args, int alen) {
         return;
     }
 
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Starting delegation query");
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Target: %s %s", targetIdentifier, isTargetDN ? "(DN)" : "(name)");
-
     // Initialize LDAP connection
     char* dcHostname = NULL;
     LDAP* ld = InitializeLDAPConnection(dcAddress, useLdaps, &dcHostname);
@@ -62,7 +59,6 @@ void go(char *args, int alen) {
             CleanupLDAP(ld);
             return;
         }
-        BeaconPrintf(CALLBACK_OUTPUT, "[+] Target DN: %s", targetDN);
     }
 
     // Query delegation attributes
@@ -134,5 +130,4 @@ void go(char *args, int alen) {
     if (defaultNC) MSVCRT$free(defaultNC);
     if (dcHostname) MSVCRT$free(dcHostname);
     CleanupLDAP(ld);
-    BeaconPrintf(CALLBACK_OUTPUT, "\n[*] Operation complete");
 }

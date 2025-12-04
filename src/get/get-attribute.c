@@ -3,6 +3,48 @@
 #include "../common/ldap_common.c"
 
 DECLSPEC_IMPORT int __cdecl MSVCRT$_snprintf(char* buffer, size_t count, const char* format, ...);
+DECLSPEC_IMPORT int __cdecl MSVCRT$sprintf(char* buffer, const char* format, ...);
+DECLSPEC_IMPORT int __cdecl MSVCRT$_stricmp(const char* str1, const char* str2);
+
+// Convert binary GUID to string format
+void FormatGUID(BYTE* guidBytes, char* output) {
+    MSVCRT$sprintf(output, "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+        guidBytes[3], guidBytes[2], guidBytes[1], guidBytes[0],
+        guidBytes[5], guidBytes[4],
+        guidBytes[7], guidBytes[6],
+        guidBytes[8], guidBytes[9],
+        guidBytes[10], guidBytes[11], guidBytes[12], guidBytes[13], guidBytes[14], guidBytes[15]);
+}
+
+// Convert binary SID to string format (simplified - handles common SIDs)
+void FormatSID(BYTE* sidBytes, int length, char* output) {
+    if (length < 8) {
+        MSVCRT$sprintf(output, "(invalid SID)");
+        return;
+    }
+    
+    BYTE revision = sidBytes[0];
+    BYTE subAuthCount = sidBytes[1];
+    
+    // Authority (6 bytes, big-endian)
+    unsigned long long authority = 0;
+    for (int i = 0; i < 6; i++) {
+        authority = (authority << 8) | sidBytes[2 + i];
+    }
+    
+    // Start building the SID string
+    int pos = MSVCRT$sprintf(output, "S-%d-%llu", revision, authority);
+    
+    // SubAuthorities (32-bit values, little-endian)
+    for (int i = 0; i < subAuthCount && (8 + i * 4 + 3) < length; i++) {
+        unsigned long subAuth = 
+            (unsigned long)sidBytes[8 + i * 4] |
+            ((unsigned long)sidBytes[8 + i * 4 + 1] << 8) |
+            ((unsigned long)sidBytes[8 + i * 4 + 2] << 16) |
+            ((unsigned long)sidBytes[8 + i * 4 + 3] << 24);
+        pos += MSVCRT$sprintf(output + pos, "-%lu", subAuth);
+    }
+}
 
 void go(char *args, int alen) {
     datap parser;
@@ -22,13 +64,8 @@ void go(char *args, int alen) {
     }
 
     if (!attribute || MSVCRT$strlen(attribute) == 0) {
-        BeaconPrintf(CALLBACK_ERROR, "[-] Attribute name is required");
         return;
     }
-
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Starting attribute query");
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Target: %s %s", targetIdentifier, isTargetDN ? "(DN)" : "(name)");
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Attribute: %s", attribute);
 
     // Initialize LDAP connection
     char* dcHostname = NULL;
@@ -68,7 +105,6 @@ void go(char *args, int alen) {
             CleanupLDAP(ld);
             return;
         }
-        BeaconPrintf(CALLBACK_OUTPUT, "[+] Target DN: %s", targetDN);
     }
 
     // Query the specific attribute
@@ -97,17 +133,42 @@ void go(char *args, int alen) {
 
     LDAPMessage* entry = WLDAP32$ldap_first_entry(ld, searchResult);
     if (entry) {
-        char** values = WLDAP32$ldap_get_values(ld, entry, attribute);
-        if (values) {
-            int valueCount = WLDAP32$ldap_count_values(values);
-            BeaconPrintf(CALLBACK_OUTPUT, "\n[+] Attribute '%s' (%d value(s)):", attribute, valueCount);
-            BeaconPrintf(CALLBACK_OUTPUT, "==========================================");
-            for (int i = 0; values[i] != NULL; i++) {
-                BeaconPrintf(CALLBACK_OUTPUT, "%s", values[i]);
+        // Check if this is a known binary attribute (case-insensitive)
+        BOOL isBinary = (MSVCRT$_stricmp(attribute, "objectGUID") == 0 || 
+                        MSVCRT$_stricmp(attribute, "objectSid") == 0 ||
+                        MSVCRT$_stricmp(attribute, "objectSID") == 0);
+        
+        if (isBinary) {
+            // Handle binary attributes
+            struct berval** bvalues = WLDAP32$ldap_get_values_len(ld, entry, attribute);
+            if (bvalues && bvalues[0]) {
+                BeaconPrintf(CALLBACK_OUTPUT, "==========================================");
+                for (int i = 0; bvalues[i] != NULL; i++) {
+                    char formatted[256];
+                    if (MSVCRT$_stricmp(attribute, "objectGUID") == 0) {
+                        FormatGUID((BYTE*)bvalues[i]->bv_val, formatted);
+                        BeaconPrintf(CALLBACK_OUTPUT, "%s", formatted);
+                    } else if (MSVCRT$_stricmp(attribute, "objectSid") == 0 || 
+                               MSVCRT$_stricmp(attribute, "objectSID") == 0) {
+                        FormatSID((BYTE*)bvalues[i]->bv_val, bvalues[i]->bv_len, formatted);
+                        BeaconPrintf(CALLBACK_OUTPUT, "%s", formatted);
+                    }
+                }
+                WLDAP32$ldap_value_free_len(bvalues);
+            } else {
+                BeaconPrintf(CALLBACK_OUTPUT, "==========================================");
+                BeaconPrintf(CALLBACK_OUTPUT, "(No value found)");
             }
-            WLDAP32$ldap_value_free(values);
         } else {
-            BeaconPrintf(CALLBACK_OUTPUT, "[*] Attribute '%s' not found or has no value", attribute);
+            // Handle string attributes
+            char** values = WLDAP32$ldap_get_values(ld, entry, attribute);
+            if (values) {
+                BeaconPrintf(CALLBACK_OUTPUT, "==========================================");
+                for (int i = 0; values[i] != NULL; i++) {
+                    BeaconPrintf(CALLBACK_OUTPUT, "%s", values[i]);
+                }
+                WLDAP32$ldap_value_free(values);
+            }
         }
     }
 
@@ -116,5 +177,4 @@ void go(char *args, int alen) {
     if (defaultNC) MSVCRT$free(defaultNC);
     if (dcHostname) MSVCRT$free(dcHostname);
     CleanupLDAP(ld);
-    BeaconPrintf(CALLBACK_OUTPUT, "\n[*] Operation complete");
 }

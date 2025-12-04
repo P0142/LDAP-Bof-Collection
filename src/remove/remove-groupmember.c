@@ -29,22 +29,6 @@ void go(char *args, int alen) {
         return;
     }
     
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Starting LDAP group membership removal");
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Member: %s %s", memberIdentifier, isMemberDN ? "(DN)" : "(name)");
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Group: %s %s", groupIdentifier, isGroupDN ? "(DN)" : "(name)");
-    
-    if (searchOu && MSVCRT$strlen(searchOu) > 0) {
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Search OU: %s", searchOu);
-    }
-    
-    if (dcAddress && MSVCRT$strlen(dcAddress) > 0) {
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Domain Controller: %s", dcAddress);
-    }
-    
-    if (useLdaps) {
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Using LDAPS (port 636)");
-    }
-    
     // Initialize LDAP connection
     char* dcHostname = NULL;
     LDAP* ld = InitializeLDAPConnection(dcAddress, useLdaps, &dcHostname);
@@ -67,7 +51,6 @@ void go(char *args, int alen) {
             CleanupLDAP(ld);
             return;
         }
-        BeaconPrintf(CALLBACK_OUTPUT, "[+] Default naming context: %s", defaultNC);
     }
     
     // Resolve member DN
@@ -78,10 +61,8 @@ void go(char *args, int alen) {
         if (memberDN) {
             MSVCRT$strcpy(memberDN, memberIdentifier);
         }
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Using provided member DN: %s", memberDN);
     } else {
         // Search for member by sAMAccountName
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Resolving member DN...");
         char* searchBase = (searchOu && MSVCRT$strlen(searchOu) > 0) ? searchOu : defaultNC;
         memberDN = FindObjectDN(ld, memberIdentifier, searchBase);
         
@@ -103,10 +84,8 @@ void go(char *args, int alen) {
         if (groupDN) {
             MSVCRT$strcpy(groupDN, groupIdentifier);
         }
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Using provided group DN: %s", groupDN);
     } else {
         // Search for group by sAMAccountName
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Resolving group DN...");
         char* searchBase = (searchOu && MSVCRT$strlen(searchOu) > 0) ? searchOu : defaultNC;
         groupDN = FindObjectDN(ld, groupIdentifier, searchBase);
         
@@ -131,7 +110,6 @@ void go(char *args, int alen) {
     LDAPModA* mods[] = { &member_mod, NULL };
     
     // Apply the modification
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Removing member from group...");
     ULONG result = WLDAP32$ldap_modify_s(ld, groupDN, mods);
     
     if (result == LDAP_SUCCESS) {
@@ -160,6 +138,4 @@ void go(char *args, int alen) {
     if (memberDN) MSVCRT$free(memberDN);
     if (groupDN) MSVCRT$free(groupDN);
     CleanupLDAP(ld);
-    
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Operation complete");
 }

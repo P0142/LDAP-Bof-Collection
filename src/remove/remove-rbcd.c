@@ -47,9 +47,6 @@ void go(char *args, int alen) {
         return;
     }
     
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Starting RemoveRBCD operation");
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Target: %s %s", targetIdentifier, isTargetDN ? "(DN)" : "(name)");
-    
     // Determine removal mode
     BOOL removeAllRbcd = clearAll;
     BOOL removeByPrincipal = FALSE;
@@ -58,7 +55,7 @@ void go(char *args, int alen) {
     ACCESS_MASK accessMask = 0;
     
     if (removeAllRbcd) {
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Mode: Clear all RBCD configuration");
+        // Clear all RBCD configuration
     } else {
         if (!principalIdentifier || MSVCRT$strlen(principalIdentifier) == 0) {
             BeaconPrintf(CALLBACK_ERROR, "[-] Principal identifier required when not using --clear-all");
@@ -66,36 +63,14 @@ void go(char *args, int alen) {
         }
         
         removeByPrincipal = TRUE;
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Mode: Remove by principal");
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Principal: %s %s", principalIdentifier, isPrincipalDN ? "(DN)" : "(name)");
         
         // Parse access mask if provided
         if (accessMaskStr && MSVCRT$strlen(accessMaskStr) > 0) {
             accessMask = ParseAccessMask(accessMaskStr);
-            if (accessMask != 0) {
-                BeaconPrintf(CALLBACK_OUTPUT, "[*] Access Mask Filter: %s (0x%08x)", accessMaskStr, accessMask);
-            }
         }
-        
-        if (accessMask == 0) {
-            BeaconPrintf(CALLBACK_OUTPUT, "[*] Filter: Remove ALL ACEs for principal (no mask filter)");
-        }
-    }
-    
-    if (searchOu && MSVCRT$strlen(searchOu) > 0) {
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Search OU: %s", searchOu);
-    }
-    
-    if (dcAddress && MSVCRT$strlen(dcAddress) > 0) {
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Domain Controller: %s", dcAddress);
-    }
-    
-    if (useLdaps) {
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Using LDAPS (port 636)");
     }
     
     // Initialize LDAP connection
-    BeaconPrintf(CALLBACK_OUTPUT, "\n[*] Initializing LDAP connection...");
     char* dcHostname = NULL;
     LDAP* ld = InitializeLDAPConnection(dcAddress, useLdaps, &dcHostname);
     if (!ld) {
@@ -124,9 +99,7 @@ void go(char *args, int alen) {
         if (targetDN) {
             MSVCRT$strcpy(targetDN, targetIdentifier);
         }
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Using provided target DN: %s", targetDN);
     } else {
-        
         char* searchBase = (searchOu && MSVCRT$strlen(searchOu) > 0) ? searchOu : defaultNC;
         targetDN = FindObjectDN(ld, targetIdentifier, searchBase);
         
@@ -138,22 +111,17 @@ void go(char *args, int alen) {
             CleanupLDAP(ld);
             return;
         }
-        BeaconPrintf(CALLBACK_OUTPUT, "[+] Resolved target DN: %s", targetDN);
     }
     
     // Resolve principal if removing by principal
     if (removeByPrincipal) {
-        BeaconPrintf(CALLBACK_OUTPUT, "\n[*] Resolving principal information...");
-        
         if (isPrincipalDN) {
             size_t len = MSVCRT$strlen(principalIdentifier) + 1;
             principalDN = (char*)MSVCRT$malloc(len);
             if (principalDN) {
                 MSVCRT$strcpy(principalDN, principalIdentifier);
             }
-            BeaconPrintf(CALLBACK_OUTPUT, "[*] Using provided principal DN: %s", principalDN);
         } else {
-            BeaconPrintf(CALLBACK_OUTPUT, "[*] Resolving principal DN...");
             char* searchBase = (searchOu && MSVCRT$strlen(searchOu) > 0) ? searchOu : defaultNC;
             principalDN = FindObjectDN(ld, principalIdentifier, searchBase);
             
@@ -170,7 +138,6 @@ void go(char *args, int alen) {
         }
         
         // Get principal's objectSid
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Retrieving principal's objectSid...");
         pPrincipalSid = GetObjectSid(ld, principalDN);
         
         if (!pPrincipalSid) {
@@ -191,8 +158,6 @@ void go(char *args, int alen) {
     }
     
     // Read current RBCD configuration
-    BeaconPrintf(CALLBACK_OUTPUT, "\n[*] Reading current RBCD configuration...");
-    
     LDAPMessage* searchResult = NULL;
     LDAPMessage* entry = NULL;
     char* attrs[] = { "msDS-AllowedToActOnBehalfOfOtherIdentity", NULL };
@@ -227,7 +192,6 @@ void go(char *args, int alen) {
     
     if (!values || !values[0]) {
         BeaconPrintf(CALLBACK_OUTPUT, "[*] No RBCD configuration found on target");
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Nothing to remove");
         WLDAP32$ldap_msgfree(searchResult);
         goto cleanup;
     }
@@ -262,7 +226,6 @@ void go(char *args, int alen) {
         
         if (result == LDAP_SUCCESS) {
             BeaconPrintf(CALLBACK_OUTPUT, "\n[+] SUCCESS: All RBCD configuration removed!");
-            BeaconPrintf(CALLBACK_OUTPUT, "[+] Target: %s", targetDN);
             BeaconPrintf(CALLBACK_OUTPUT, "[*] The msDS-AllowedToActOnBehalfOfOtherIdentity attribute has been deleted");
         } else {
             BeaconPrintf(CALLBACK_ERROR, "\n[-] FAILED to remove RBCD configuration");
@@ -375,7 +338,6 @@ void go(char *args, int alen) {
         
         if (result == LDAP_SUCCESS) {
             BeaconPrintf(CALLBACK_OUTPUT, "\n[+] SUCCESS: All RBCD configuration removed!");
-            BeaconPrintf(CALLBACK_OUTPUT, "[+] Target: %s", targetDN);
             BeaconPrintf(CALLBACK_OUTPUT, "[+] Removed principal: %s", principalIdentifier);
         } else {
             BeaconPrintf(CALLBACK_ERROR, "\n[-] FAILED to remove RBCD configuration");
@@ -487,7 +449,6 @@ void go(char *args, int alen) {
     
     if (result == LDAP_SUCCESS) {
         BeaconPrintf(CALLBACK_OUTPUT, "\n[+] SUCCESS: RBCD principal(s) removed successfully!");
-        BeaconPrintf(CALLBACK_OUTPUT, "[+] Target: %s", targetDN);
         BeaconPrintf(CALLBACK_OUTPUT, "[+] Removed: %d ACE(s)", removeCount);
         BeaconPrintf(CALLBACK_OUTPUT, "[+] Remaining: %d ACE(s) (was %d)", 
                     sdInfo->DaclAceCount - removeCount, sdInfo->DaclAceCount);
@@ -546,5 +507,4 @@ cleanup:
     if (targetDN) MSVCRT$free(targetDN);
     CleanupLDAP(ld);
     
-    BeaconPrintf(CALLBACK_OUTPUT, "\n[*] Operation complete");
 }

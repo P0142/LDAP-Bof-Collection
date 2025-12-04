@@ -14,8 +14,6 @@ void go(char *args, int alen) {
     int useLdaps = BeaconDataInt(&parser);
     int detailed = BeaconDataInt(&parser);
 
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Starting writable object enumeration");
-
     // Initialize LDAP connection
     char* dcHostname = NULL;
     LDAP* ld = InitializeLDAPConnection(dcAddress, useLdaps, &dcHostname);
@@ -34,7 +32,6 @@ void go(char *args, int alen) {
     }
 
     char* searchBase = (searchOu && MSVCRT$strlen(searchOu) > 0) ? searchOu : defaultNC;
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Search base: %s", searchBase);
 
     // Search for objects - we'll check each one for write access
     // Focus on high-value targets: users, computers, groups
@@ -71,8 +68,6 @@ void go(char *args, int alen) {
 
     int totalCount = WLDAP32$ldap_count_entries(ld, searchResult);
     int writableCount = 0;
-    
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Checking %d objects for write permissions...\n", totalCount);
 
     LDAPMessage* entry = WLDAP32$ldap_first_entry(ld, searchResult);
     while (entry != NULL) {
@@ -142,5 +137,4 @@ void go(char *args, int alen) {
     MSVCRT$free(dcHostname);
     CleanupLDAP(ld);
     BeaconPrintf(CALLBACK_OUTPUT, "[+] Found %d objects with write permissions", writableCount);
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Operation complete");
 }

@@ -22,17 +22,7 @@ void go(char *args, int alen) {
     }
 
     if (!attribute || MSVCRT$strlen(attribute) == 0) {
-        BeaconPrintf(CALLBACK_ERROR, "[-] Attribute name is required");
         return;
-    }
-
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Starting remove attribute operation");
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Target: %s %s", targetIdentifier, isTargetDN ? "(DN)" : "(name)");
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Attribute: %s", attribute);
-    if (value && MSVCRT$strlen(value) > 0) {
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Value to remove: %s", value);
-    } else {
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Removing entire attribute");
     }
 
     char* dcHostname = NULL;
@@ -68,7 +58,6 @@ void go(char *args, int alen) {
             CleanupLDAP(ld);
             return;
         }
-        BeaconPrintf(CALLBACK_OUTPUT, "[+] Target DN: %s", targetDN);
     }
 
     LDAPModA attr_mod;
@@ -89,7 +78,6 @@ void go(char *args, int alen) {
     if (result == LDAP_SUCCESS) {
         BeaconPrintf(CALLBACK_OUTPUT, "[+] Successfully removed attribute '%s'", attribute);
     } else if (result == LDAP_NO_SUCH_ATTRIBUTE) {
-        BeaconPrintf(CALLBACK_ERROR, "[-] Attribute '%s' not found", attribute);
     } else {
         BeaconPrintf(CALLBACK_ERROR, "[-] Failed to remove attribute");
         PrintLdapError("Remove attribute", result);
@@ -99,5 +87,4 @@ void go(char *args, int alen) {
     if (defaultNC) MSVCRT$free(defaultNC);
     if (dcHostname) MSVCRT$free(dcHostname);
     CleanupLDAP(ld);
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Operation complete");
 }

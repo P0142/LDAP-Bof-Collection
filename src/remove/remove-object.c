@@ -21,21 +21,6 @@ void go(char *args, int alen) {
         return;
     }
     
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Starting LDAP object deletion");
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Object: %s %s", objectIdentifier, isObjectDN ? "(DN)" : "(name)");
-    
-    if (searchOu && MSVCRT$strlen(searchOu) > 0) {
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Search OU: %s", searchOu);
-    }
-    
-    if (dcAddress && MSVCRT$strlen(dcAddress) > 0) {
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Domain Controller: %s", dcAddress);
-    }
-    
-    if (useLdaps) {
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Using LDAPS (port 636)");
-    }
-    
     // Initialize LDAP connection
     char* dcHostname = NULL;
     LDAP* ld = InitializeLDAPConnection(dcAddress, useLdaps, &dcHostname);
@@ -67,10 +52,8 @@ void go(char *args, int alen) {
         if (objectDN) {
             MSVCRT$strcpy(objectDN, objectIdentifier);
         }
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Using provided object DN: %s", objectDN);
     } else {
         // Search for object by sAMAccountName
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Resolving object DN...");
         char* searchBase = (searchOu && MSVCRT$strlen(searchOu) > 0) ? searchOu : defaultNC;
         objectDN = FindObjectDN(ld, objectIdentifier, searchBase);
         
@@ -81,11 +64,9 @@ void go(char *args, int alen) {
             CleanupLDAP(ld);
             return;
         }
-        BeaconPrintf(CALLBACK_OUTPUT, "[+] Object DN: %s", objectDN);
     }
     
     // Delete the object
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Deleting object from Active Directory...");
     ULONG result = WLDAP32$ldap_delete_s(ld, objectDN);
     
     if (result == LDAP_SUCCESS) {
@@ -110,6 +91,4 @@ void go(char *args, int alen) {
     if (objectDN) MSVCRT$free(objectDN);
     if (dcHostname) MSVCRT$free(dcHostname);
     CleanupLDAP(ld);
-    
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Operation complete");
 }

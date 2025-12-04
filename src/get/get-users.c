@@ -13,8 +13,6 @@ void go(char *args, int alen) {
     char* dcAddress = ValidateInput(BeaconDataExtract(&parser, NULL));
     int useLdaps = BeaconDataInt(&parser);
 
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Starting user enumeration");
-
     // Initialize LDAP connection
     char* dcHostname = NULL;
     LDAP* ld = InitializeLDAPConnection(dcAddress, useLdaps, &dcHostname);
@@ -33,11 +31,10 @@ void go(char *args, int alen) {
     }
 
     char* searchBase = (searchOu && MSVCRT$strlen(searchOu) > 0) ? searchOu : defaultNC;
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Search base: %s", searchBase);
 
     // Search for user objects
     LDAPMessage* searchResult = NULL;
-    char* attrs[] = { "sAMAccountName", "cn", "distinguishedName", "userPrincipalName", NULL };
+    char* attrs[] = { "sAMAccountName", "distinguishedName", NULL };
 
     ULONG result = WLDAP32$ldap_search_s(
         ld,
@@ -82,5 +79,4 @@ void go(char *args, int alen) {
     MSVCRT$free(defaultNC);
     if (dcHostname) MSVCRT$free(dcHostname);
     CleanupLDAP(ld);
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Operation complete");
 }

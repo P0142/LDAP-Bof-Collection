@@ -22,13 +22,9 @@ void go(char *args, int alen) {
     }
 
     if (!spn || MSVCRT$strlen(spn) == 0) {
-        BeaconPrintf(CALLBACK_ERROR, "[-] SPN is required for constrained delegation");
         return;
     }
 
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Starting add delegation operation");
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Target: %s %s", targetIdentifier, isTargetDN ? "(DN)" : "(name)");
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Delegation SPN: %s", spn);
 
     // Initialize LDAP connection
     char* dcHostname = NULL;
@@ -68,7 +64,6 @@ void go(char *args, int alen) {
             CleanupLDAP(ld);
             return;
         }
-        BeaconPrintf(CALLBACK_OUTPUT, "[+] Target DN: %s", targetDN);
     }
 
     // Add delegation SPN to msDS-AllowedToDelegateTo
@@ -86,7 +81,6 @@ void go(char *args, int alen) {
         BeaconPrintf(CALLBACK_OUTPUT, "[+] Successfully added delegation SPN '%s'", spn);
         BeaconPrintf(CALLBACK_OUTPUT, "[!] Note: Ensure TRUSTED_TO_AUTH_FOR_DELEGATION UAC flag is set for constrained delegation");
     } else if (result == LDAP_ATTRIBUTE_OR_VALUE_EXISTS) {
-        BeaconPrintf(CALLBACK_ERROR, "[-] Delegation SPN '%s' already exists", spn);
     } else {
         BeaconPrintf(CALLBACK_ERROR, "[-] Failed to add delegation SPN");
         PrintLdapError("Add delegation", result);
@@ -96,5 +90,4 @@ void go(char *args, int alen) {
     if (defaultNC) MSVCRT$free(defaultNC);
     if (dcHostname) MSVCRT$free(dcHostname);
     CleanupLDAP(ld);
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Operation complete");
 }

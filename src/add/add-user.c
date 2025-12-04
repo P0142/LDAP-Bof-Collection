@@ -34,10 +34,6 @@ void go(char *args, int alen) {
     // Force LDAPS if password provided
     BOOL requireLdaps = (password && MSVCRT$strlen(password) > 0) || useLdaps;
     
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Starting user creation");
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] User identifier: %s %s", userIdentifier, isUserDN ? "(DN)" : "(username)");
-    if (requireLdaps) BeaconPrintf(CALLBACK_OUTPUT, "[*] Using LDAPS (required for password)");
-    
     // Initialize LDAP connection
     char* dcHostname = NULL;
     LDAP* ld = InitializeLDAPConnection(dcAddress, useLdaps, &dcHostname);
@@ -95,9 +91,6 @@ void go(char *args, int alen) {
             MSVCRT$_snprintf(userDN, sizeof(userDN), "CN=%s,CN=Users,%s", username, defaultNC);
         }
     }
-    
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Target DN: %s", userDN);
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] sAMAccountName: %s", username);
     
     // Build UPN (username@domain)
     char upn[256];
@@ -191,7 +184,6 @@ void go(char *args, int alen) {
     attrs[attrCount] = NULL;
     
     // Add user
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Creating user...");
     ULONG result = WLDAP32$ldap_add_s(ld, userDN, attrs);
     
     if (result == LDAP_SUCCESS) {
@@ -215,5 +207,4 @@ void go(char *args, int alen) {
     MSVCRT$free(defaultNC);
     MSVCRT$free(dcHostname);
     CleanupLDAP(ld);
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Operation complete");
 }

@@ -75,9 +75,6 @@ void go(char *args, int alen) {
         return;
     }
 
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Starting UAC query");
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Target: %s %s", targetIdentifier, isTargetDN ? "(DN)" : "(name)");
-
     // Initialize LDAP connection
     char* dcHostname = NULL;
     LDAP* ld = InitializeLDAPConnection(dcAddress, useLdaps, &dcHostname);
@@ -116,7 +113,6 @@ void go(char *args, int alen) {
             CleanupLDAP(ld);
             return;
         }
-        BeaconPrintf(CALLBACK_OUTPUT, "[+] Target DN: %s", targetDN);
     }
 
     // Query UAC attribute
@@ -148,8 +144,6 @@ void go(char *args, int alen) {
         char** values = WLDAP32$ldap_get_values(ld, entry, "userAccountControl");
         if (values && values[0]) {
             DWORD uacValue = (DWORD)MSVCRT$strtol(values[0], NULL, 10);
-            BeaconPrintf(CALLBACK_OUTPUT, "\n[*] UAC Configuration:");
-            BeaconPrintf(CALLBACK_OUTPUT, "======================");
             PrintUACFlags(uacValue);
             WLDAP32$ldap_value_free(values);
         } else {
@@ -162,5 +156,4 @@ void go(char *args, int alen) {
     if (defaultNC) MSVCRT$free(defaultNC);
     if (dcHostname) MSVCRT$free(dcHostname);
     CleanupLDAP(ld);
-    BeaconPrintf(CALLBACK_OUTPUT, "\n[*] Operation complete");
 }

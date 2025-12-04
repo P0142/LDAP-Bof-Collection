@@ -12,8 +12,6 @@ void go(char *args, int alen) {
     char* dcAddress = ValidateInput(BeaconDataExtract(&parser, NULL));
     int useLdaps = BeaconDataInt(&parser);
 
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Gathering domain information");
-
     // Initialize LDAP connection
     char* dcHostname = NULL;
     LDAP* ld = InitializeLDAPConnection(dcAddress, useLdaps, &dcHostname);
@@ -125,5 +123,4 @@ void go(char *args, int alen) {
 
     if (dcHostname) MSVCRT$free(dcHostname);
     CleanupLDAP(ld);
-    BeaconPrintf(CALLBACK_OUTPUT, "\n[*] Operation complete");
 }

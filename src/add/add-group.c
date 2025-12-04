@@ -52,7 +52,6 @@ void go(char *args, int alen) {
     
     int groupType = GetGroupType(type, scope);
     
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Starting group creation");
     BeaconPrintf(CALLBACK_OUTPUT, "[*] Group identifier: %s %s", groupIdentifier, isGroupDN ? "(DN)" : "(name)");
     BeaconPrintf(CALLBACK_OUTPUT, "[*] Group Type: %d", groupType);
     
@@ -114,7 +113,6 @@ void go(char *args, int alen) {
         }
     }
     
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Target DN: %s", groupDN);
     BeaconPrintf(CALLBACK_OUTPUT, "[*] sAMAccountName: %s", groupname);
     
     // Convert group type to string
@@ -153,7 +151,6 @@ void go(char *args, int alen) {
     attrs[attrCount] = NULL;
     
     // Add group
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Creating group...");
     ULONG result = WLDAP32$ldap_add_s(ld, groupDN, attrs);
     
     if (result == LDAP_SUCCESS) {
@@ -206,5 +203,4 @@ void go(char *args, int alen) {
     MSVCRT$free(defaultNC);
     MSVCRT$free(dcHostname);
     CleanupLDAP(ld);
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Operation complete");
 }

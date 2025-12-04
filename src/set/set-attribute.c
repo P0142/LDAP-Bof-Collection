@@ -23,19 +23,12 @@ void go(char *args, int alen) {
     }
 
     if (!attribute || MSVCRT$strlen(attribute) == 0) {
-        BeaconPrintf(CALLBACK_ERROR, "[-] Attribute name is required");
         return;
     }
 
     if (!value || MSVCRT$strlen(value) == 0) {
-        BeaconPrintf(CALLBACK_ERROR, "[-] Value is required");
         return;
     }
-
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Starting set attribute operation");
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Target: %s %s", targetIdentifier, isTargetDN ? "(DN)" : "(name)");
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Attribute: %s", attribute);
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Value: %s", value);
 
     char* dcHostname = NULL;
     LDAP* ld = InitializeLDAPConnection(dcAddress, useLdaps, &dcHostname);
@@ -70,7 +63,6 @@ void go(char *args, int alen) {
             CleanupLDAP(ld);
             return;
         }
-        BeaconPrintf(CALLBACK_OUTPUT, "[+] Target DN: %s", targetDN);
     }
 
     char* attr_values[] = { value, NULL };
@@ -94,5 +86,4 @@ void go(char *args, int alen) {
     if (defaultNC) MSVCRT$free(defaultNC);
     if (dcHostname) MSVCRT$free(dcHostname);
     CleanupLDAP(ld);
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Operation complete");
 }

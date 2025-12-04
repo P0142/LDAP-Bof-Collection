@@ -760,7 +760,7 @@ char* GetAccessMaskString(ACCESS_MASK mask) {
 // SID UTILITIES
 // ============================================================================
 
-// Convert SID to string (wrapper for convenience)
+// Convert SID to string
 char* SidToString(PSID sid) {
     if (!sid) return NULL;
     
@@ -780,7 +780,7 @@ char* SidToString(PSID sid) {
     return result;
 }
 
-// Convert string to SID (wrapper for convenience)
+// Convert string to SID
 PSID StringToSid(const char* sidString) {
     if (!sidString) return NULL;
     
@@ -1038,8 +1038,7 @@ char* GetGuidFriendlyName(GUID* guid) {
 void PrintSecurityDescriptorInfo(PSD_INFO sdInfo, const char* objectDN, const char* objectSid) {
     if (!sdInfo) return;
 
-    BeaconPrintf(CALLBACK_OUTPUT, "\n[+] Security Descriptor Information:");
-    BeaconPrintf(CALLBACK_OUTPUT, "=====================================");
+    BeaconPrintf(CALLBACK_OUTPUT, "\n[+] Security Descriptor Information:\n=====================================");
     
     // Owner
     if (sdInfo->OwnerSid) {
@@ -1288,7 +1287,6 @@ PACL CreateNewDaclWithAce(PACL oldDacl, PSID trusteeSid, ACCESS_MASK accessMask,
                     pAce->AceType == ACCESS_DENIED_OBJECT_ACE_TYPE ||
                     pAce->AceType == SYSTEM_AUDIT_OBJECT_ACE_TYPE) {
                     aclRevision = ACL_REVISION_DS;
-                    BeaconPrintf(CALLBACK_OUTPUT, "[*] Detected object ACEs in old DACL, using ACL_REVISION_DS");
                     break;
                 }
             }
@@ -1298,7 +1296,6 @@ PACL CreateNewDaclWithAce(PACL oldDacl, PSID trusteeSid, ACCESS_MASK accessMask,
     // Also use ACL_REVISION_DS if we're adding an object ACE
     if (isObjectAce && aclRevision == ACL_REVISION) {
         aclRevision = ACL_REVISION_DS;
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Adding object ACE, using ACL_REVISION_DS");
     }
 
     // Initialize new DACL with appropriate revision
@@ -1665,7 +1662,7 @@ PSECURITY_DESCRIPTOR ConvertBervalToSecurityDescriptor(BERVAL* sdBerval) {
     }
 
     // Note: The DACL, SACL, Owner, and Group pointers are now part of the absolute SD
-    // We should NOT free them separately - they'll be freed when the SD is freed
+    // We should NOT free them separately. They'll be freed when the SD is freed
     // However, we allocated them, so we need to track them for cleanup
     // For BOF simplicity, we'll accept this small memory cost
 

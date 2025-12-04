@@ -20,9 +20,6 @@ void go(char *args, int alen) {
         return;
     }
 
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Starting user group enumeration");
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Target user: %s %s", userIdentifier, isUserDN ? "(DN)" : "(name)");
-
     // Initialize LDAP connection
     char* dcHostname = NULL;
     LDAP* ld = InitializeLDAPConnection(dcAddress, useLdaps, &dcHostname);
@@ -107,5 +104,4 @@ void go(char *args, int alen) {
     MSVCRT$free(defaultNC);
     if (dcHostname) MSVCRT$free(dcHostname);
     CleanupLDAP(ld);
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Operation complete");
 }

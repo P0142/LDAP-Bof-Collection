@@ -147,17 +147,6 @@ void go(char *args, int alen) {
         return;
     }
     
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Starting object move/rename operation");
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Source: %s %s", sourceIdentifier, isSourceDN ? "(DN)" : "(name)");
-    
-    if (targetOU && MSVCRT$strlen(targetOU) > 0) {
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Target OU: %s", targetOU);
-    }
-    
-    if (newName && MSVCRT$strlen(newName) > 0) {
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] New name: %s", newName);
-    }
-    
     // Initialize LDAP connection
     char* dcHostname = NULL;
     LDAP* ld = InitializeLDAPConnection(dcAddress, useLdaps, &dcHostname);
@@ -189,10 +178,8 @@ void go(char *args, int alen) {
         if (sourceDN) {
             MSVCRT$strcpy(sourceDN, sourceIdentifier);
         }
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Using provided source DN");
     } else {
         // Search for source by sAMAccountName
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Resolving source DN...");
         char* searchBase = (searchOu && MSVCRT$strlen(searchOu) > 0) ? searchOu : defaultNC;
         sourceDN = FindObjectDN(ld, sourceIdentifier, searchBase);
         
@@ -205,9 +192,6 @@ void go(char *args, int alen) {
         }
     }
     
-    BeaconPrintf(CALLBACK_OUTPUT, "[+] Source DN: %s", sourceDN);
-    BeaconPrintf(CALLBACK_OUTPUT, "");
-    
     // Extract current RDN and parent from source DN
     char* currentRDN = ExtractRDN(sourceDN);
     char* currentParent = ExtractParentDN(sourceDN);
@@ -219,12 +203,6 @@ void go(char *args, int alen) {
         CleanupLDAP(ld);
         return;
     }
-    
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Current RDN: %s", currentRDN);
-    if (currentParent) {
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Current parent: %s", currentParent);
-    }
-    BeaconPrintf(CALLBACK_OUTPUT, "");
     
     // Determine new RDN
     char* newRDN = NULL;
@@ -246,7 +224,6 @@ void go(char *args, int alen) {
                 MSVCRT$_snprintf(newRDN, len, "CN=%s", newName);
             }
         }
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] New RDN: %s", newRDN);
     } else {
         // No rename, use current RDN
         size_t len = MSVCRT$strlen(currentRDN) + 1;
@@ -254,7 +231,6 @@ void go(char *args, int alen) {
         if (newRDN) {
             MSVCRT$strcpy(newRDN, currentRDN);
         }
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Keeping current RDN (no rename)");
     }
     
     // Determine new parent
@@ -266,7 +242,6 @@ void go(char *args, int alen) {
         if (newParent) {
             MSVCRT$strcpy(newParent, targetOU);
         }
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] New parent: %s", newParent);
     } else {
         // No move, use current parent
         if (currentParent) {
@@ -275,18 +250,11 @@ void go(char *args, int alen) {
             if (newParent) {
                 MSVCRT$strcpy(newParent, currentParent);
             }
-            BeaconPrintf(CALLBACK_OUTPUT, "[*] Keeping current parent (no move)");
-        } else {
-            BeaconPrintf(CALLBACK_OUTPUT, "[*] No parent DN (object at root)");
         }
     }
     
     // Build expected new full DN for display
     char* expectedNewDN = BuildFullDN(newRDN, newParent);
-    if (expectedNewDN) {
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Expected new DN: %s", expectedNewDN);
-    }
-    BeaconPrintf(CALLBACK_OUTPUT, "");
     
     // Determine what operation we're doing
     BOOL isMove = FALSE;
@@ -310,15 +278,6 @@ void go(char *args, int alen) {
         BeaconPrintf(CALLBACK_OUTPUT, "[!] No changes detected - object already at target location with target name");
         BeaconPrintf(CALLBACK_OUTPUT, "[*] Current DN: %s", sourceDN);
         goto cleanup;
-    }
-    
-    // Display operation summary
-    if (isMove && isRename) {
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Operation: MOVE and RENAME");
-    } else if (isMove) {
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Operation: MOVE only");
-    } else if (isRename) {
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Operation: RENAME only");
     }
     
     // Perform the rename/move operation
@@ -425,6 +384,4 @@ cleanup:
     if (newParent) MSVCRT$free(newParent);
     if (expectedNewDN) MSVCRT$free(expectedNewDN);
     CleanupLDAP(ld);
-    
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Operation complete");
 }

@@ -32,30 +32,8 @@ void go(char *args, int alen) {
     BOOL hasOldPassword = (oldPassword && MSVCRT$strlen(oldPassword) > 0);
     BOOL isAdminReset = !hasOldPassword;
     
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Starting LDAP password operation");
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] User: %s %s", userIdentifier, isUserDN ? "(DN)" : "(name)");
-    
-    if (isAdminReset) {
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Operation type: Administrative password reset (requires admin rights)");
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] LDAPS required - will use port 636");
-    } else {
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Operation type: User password change");
-    }
-    
-    if (searchOu && MSVCRT$strlen(searchOu) > 0) {
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Search OU: %s", searchOu);
-    }
-    
-    if (dcAddress && MSVCRT$strlen(dcAddress) > 0) {
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Domain Controller: %s", dcAddress);
-    }
-    
     // Force LDAPS for admin reset OR if explicitly requested
     BOOL requireLdaps = isAdminReset || useLdaps;
-    
-    if (requireLdaps) {
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Using LDAPS (port 636)");
-    }
     
     // Initialize LDAP connection
     char* dcHostname = NULL;
@@ -85,10 +63,8 @@ void go(char *args, int alen) {
         if (userDN) {
             MSVCRT$strcpy(userDN, userIdentifier);
         }
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Using provided user DN: %s", userDN);
     } else {
         // Search for user by sAMAccountName
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Resolving user DN...");
         char* searchBase = (searchOu && MSVCRT$strlen(searchOu) > 0) ? searchOu : defaultNC;
         userDN = FindObjectDN(ld, userIdentifier, searchBase);
         
@@ -99,7 +75,6 @@ void go(char *args, int alen) {
             CleanupLDAP(ld);
             return;
         }
-        BeaconPrintf(CALLBACK_OUTPUT, "[+] User DN: %s", userDN);
     }
     
     // Encode passwords
@@ -135,8 +110,6 @@ void go(char *args, int alen) {
     
     if (isAdminReset) {
         // Administrative reset: use LDAP_MOD_REPLACE
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Performing administrative password reset...");
-        
         BERVAL* password_bervals[] = { newPasswordBerval, NULL };
         LDAPModA password_mod;
         password_mod.mod_op = LDAP_MOD_REPLACE | LDAP_MOD_BVALUES;
@@ -148,8 +121,6 @@ void go(char *args, int alen) {
         result = WLDAP32$ldap_modify_s(ld, userDN, mods);
     } else {
         // User password change: delete old, add new
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Performing user password change...");
-        
         BERVAL* old_password_bervals[] = { oldPasswordBerval, NULL };
         LDAPModA old_password_mod;
         old_password_mod.mod_op = LDAP_MOD_DELETE | LDAP_MOD_BVALUES;
@@ -207,6 +178,4 @@ void go(char *args, int alen) {
     if (defaultNC) MSVCRT$free(defaultNC);
     if (userDN) MSVCRT$free(userDN);
     CleanupLDAP(ld);
-    
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Operation complete");
 }

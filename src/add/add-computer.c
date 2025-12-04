@@ -25,17 +25,6 @@ void go(char *args, int alen) {
     // Force LDAPS if password is provided
     BOOL requireLdaps = (password && MSVCRT$strlen(password) > 0) || useLdaps;
     
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Starting computer creation");
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Computer identifier: %s %s", computerIdentifier, isComputerDN ? "(DN)" : "(name)");
-    
-    if (password && MSVCRT$strlen(password) > 0) {
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Password provided - using LDAPS");
-    }
-    
-    if (disabled) {
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Computer will be created DISABLED");
-    }
-    
     // Initialize LDAP connection
     char* dcHostname = NULL;
     LDAP* ld = InitializeLDAPConnection(dcAddress, useLdaps, &dcHostname);
@@ -117,17 +106,13 @@ void go(char *args, int alen) {
         }
     }
     
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Target DN: %s", computerDN);
-    
     // Build sAMAccountName (with $)
     char samAccountName[256];
     MSVCRT$_snprintf(samAccountName, sizeof(samAccountName), "%s$", computername);
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] sAMAccountName: %s", samAccountName);
     
     // Build dnsHostName
     char dnsHostName[512];
     MSVCRT$_snprintf(dnsHostName, sizeof(dnsHostName), "%s.%s", computername, domainName);
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] dnsHostName: %s", dnsHostName);
     
     // Build default SPNs
     char spn1[256], spn2[256], spn3[256], spn4[256];
@@ -185,7 +170,6 @@ void go(char *args, int alen) {
     attrs[attrCount] = NULL;
     
     // Add computer
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Creating computer account...");
     ULONG result = WLDAP32$ldap_add_s(ld, computerDN, attrs);
     
     if (result == LDAP_SUCCESS) {
@@ -223,5 +207,4 @@ void go(char *args, int alen) {
     MSVCRT$free(defaultNC);
     MSVCRT$free(dcHostname);
     CleanupLDAP(ld);
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Operation complete");
 }

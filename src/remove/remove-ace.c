@@ -221,8 +221,6 @@ void go(char *args, int alen) {
         return;
     }
     
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Starting RemoveACE operation");
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Target: %s %s", targetIdentifier, isTargetDN ? "(DN)" : "(name)");
     
     // Check if this is a special keyword-based removal (e.g., DCSync)
     BOOL isDCSyncRemoval = IsDCSyncKeyword(accessMaskStr);
@@ -265,7 +263,6 @@ void go(char *args, int alen) {
         }
         
         BeaconPrintf(CALLBACK_OUTPUT, "[*] Mode: Remove by matching trustee and permissions");
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Trustee: %s %s", trusteeIdentifier, isTrusteeDN ? "(DN)" : "(name)");
         
         // Parse access mask and type (unless DCSync)
         if (!isDCSyncRemoval) {
@@ -292,10 +289,8 @@ void go(char *args, int alen) {
         BeaconPrintf(CALLBACK_OUTPUT, "[*] Search OU: %s", searchOu);
     }
     if (dcAddress && MSVCRT$strlen(dcAddress) > 0) {
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Domain Controller: %s", dcAddress);
     }
     if (useLdaps) {
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Using LDAPS (port 636)");
     }
     
     // Initialize LDAP connection
@@ -345,7 +340,6 @@ void go(char *args, int alen) {
         targetDN = (char*)MSVCRT$malloc(len);
         if (targetDN) {
             MSVCRT$strcpy(targetDN, targetIdentifier);
-            BeaconPrintf(CALLBACK_OUTPUT, "[*] Using provided DN: %s", targetDN);
         }
     } else {
         char* searchBase = (searchOu && MSVCRT$strlen(searchOu) > 0) ? searchOu : defaultNC;
@@ -354,7 +348,6 @@ void go(char *args, int alen) {
             BeaconPrintf(CALLBACK_ERROR, "[-] Target '%s' not found", targetIdentifier);
             goto cleanup;
         }
-        BeaconPrintf(CALLBACK_OUTPUT, "[+] Resolved target DN: %s", targetDN);
     }
     
     if (!targetDN) {
@@ -364,14 +357,12 @@ void go(char *args, int alen) {
     
     // Resolve trustee if removing by match (not by index)
     if (!removeByIndex) {
-        BeaconPrintf(CALLBACK_OUTPUT, "\n[*] Resolving trustee...");
         
         if (isTrusteeDN) {
             size_t len = MSVCRT$strlen(trusteeIdentifier) + 1;
             trusteeDN = (char*)MSVCRT$malloc(len);
             if (trusteeDN) {
                 MSVCRT$strcpy(trusteeDN, trusteeIdentifier);
-                BeaconPrintf(CALLBACK_OUTPUT, "[*] Using provided trustee DN: %s", trusteeDN);
             }
         } else {
             char* searchBase = (searchOu && MSVCRT$strlen(searchOu) > 0) ? searchOu : defaultNC;
@@ -562,7 +553,6 @@ void go(char *args, int alen) {
     
     if (writeSuccess) {
         BeaconPrintf(CALLBACK_OUTPUT, "\n[+] SUCCESS: ACE(s) removed successfully!");
-        BeaconPrintf(CALLBACK_OUTPUT, "[+] Target: %s", targetDN);
         BeaconPrintf(CALLBACK_OUTPUT, "[+] Removed: %d ACE(s)", removeCount);
         BeaconPrintf(CALLBACK_OUTPUT, "[+] New DACL: %d ACE(s) (was %d)", 
                     sdInfo->DaclAceCount - removeCount, sdInfo->DaclAceCount);
@@ -621,5 +611,4 @@ cleanup:
     if (guidsToMatch) MSVCRT$free(guidsToMatch);
     CleanupLDAP(ld);
     
-    BeaconPrintf(CALLBACK_OUTPUT, "\n[*] Operation complete");
 }

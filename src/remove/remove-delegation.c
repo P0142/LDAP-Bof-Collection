@@ -21,13 +21,8 @@ void go(char *args, int alen) {
     }
 
     if (!spn || MSVCRT$strlen(spn) == 0) {
-        BeaconPrintf(CALLBACK_ERROR, "[-] Delegation SPN is required");
         return;
     }
-
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Starting remove delegation operation");
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Target: %s %s", targetIdentifier, isTargetDN ? "(DN)" : "(name)");
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Delegation SPN to remove: %s", spn);
 
     char* dcHostname = NULL;
     LDAP* ld = InitializeLDAPConnection(dcAddress, useLdaps, &dcHostname);
@@ -62,7 +57,6 @@ void go(char *args, int alen) {
             CleanupLDAP(ld);
             return;
         }
-        BeaconPrintf(CALLBACK_OUTPUT, "[+] Target DN: %s", targetDN);
     }
 
     char* spn_values[] = { spn, NULL };
@@ -78,7 +72,6 @@ void go(char *args, int alen) {
     if (result == LDAP_SUCCESS) {
         BeaconPrintf(CALLBACK_OUTPUT, "[+] Successfully removed delegation SPN '%s'", spn);
     } else if (result == LDAP_NO_SUCH_ATTRIBUTE) {
-        BeaconPrintf(CALLBACK_ERROR, "[-] Delegation SPN '%s' not found on object", spn);
     } else {
         BeaconPrintf(CALLBACK_ERROR, "[-] Failed to remove delegation");
         PrintLdapError("Remove delegation", result);
@@ -88,5 +81,4 @@ void go(char *args, int alen) {
     if (defaultNC) MSVCRT$free(defaultNC);
     if (dcHostname) MSVCRT$free(dcHostname);
     CleanupLDAP(ld);
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Operation complete");
 }

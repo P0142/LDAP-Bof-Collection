@@ -20,9 +20,6 @@ void go(char *args, int alen) {
         return;
     }
 
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Starting GetACL operation");
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Target: %s %s", objectIdentifier, isObjectDN ? "(DN)" : "(name)");
-
     // Initialize LDAP connection
     char* dcHostname = NULL;
     LDAP* ld = InitializeLDAPConnection(dcAddress, useLdaps, &dcHostname);
@@ -58,7 +55,6 @@ void go(char *args, int alen) {
             CleanupLDAP(ld);
             return;
         }
-        BeaconPrintf(CALLBACK_OUTPUT, "[+] Target DN: %s", targetDN);
     }
 
     // Read security descriptor
@@ -90,7 +86,6 @@ void go(char *args, int alen) {
 
     // Resolve SID names if requested
     if (resolveNames) {
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Resolving SID names...");
         if (sdInfo->OwnerSid) {
             sdInfo->OwnerName = ResolveSidToName(ld, sdInfo->OwnerSid, defaultNC);
         }
@@ -121,5 +116,4 @@ cleanup:
     if (dcHostname) MSVCRT$free(dcHostname);
     if (targetDN) MSVCRT$free(targetDN);
     CleanupLDAP(ld);
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Operation complete");
 }

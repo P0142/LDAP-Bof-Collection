@@ -57,18 +57,16 @@ char* WCharToChar(const wchar_t* wstr) {
     return str;
 }
 
-// Simple helper that returns NULL if input doesn't start with a letter or number
+// Simple helper that returns NULL if input doesn't have length
 char* ValidateInput(char* input) {
     if (input == NULL)
         return NULL;
+    
+    // Return NULL for empty strings, otherwise return the input
+    if (MSVCRT$strlen(input) == 0)
+        return NULL;
 
-    if ((input[0] >= 'A' && input[0] <= 'Z') ||
-        (input[0] >= 'a' && input[0] <= 'z') ||
-        (input[0] >= '0' && input[0] <= '9')){
-        return input;
-    }
-
-    return NULL;
+    return input;
 }
 
 // Get Domain Controller hostname
@@ -172,7 +170,6 @@ LDAP* InitializeLDAPConnection(const char* dcAddress, BOOL useLdaps, char** outD
 
     // If no DC address provided, auto-discover it
     if (!dcAddress || MSVCRT$strlen(dcAddress) == 0) {
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] No DC specified, auto-discovering...");
         discoveredDC = GetDCHostName();
         if (!discoveredDC) {
             BeaconPrintf(CALLBACK_ERROR, "[-] Failed to discover DC");
@@ -193,7 +190,7 @@ LDAP* InitializeLDAPConnection(const char* dcAddress, BOOL useLdaps, char** outD
         }
     }
 
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Connecting to: %s:%d", targetDC, portNumber);
+    //BeaconPrintf(CALLBACK_OUTPUT, "[*] Connecting to: %s:%d", targetDC, portNumber);
     
     // Use ldap_init with hostname (ANSI version)
     pLdapConnection = WLDAP32$ldap_init((PCHAR)targetDC, portNumber);
@@ -245,7 +242,6 @@ LDAP* InitializeLDAPConnection(const char* dcAddress, BOOL useLdaps, char** outD
     }
 
     // Bind using current credentials (NEGOTIATE)
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Binding to LDAP...");
     result = WLDAP32$ldap_bind_s(pLdapConnection, NULL, NULL, LDAP_AUTH_NEGOTIATE);
     
     if (result != LDAP_SUCCESS) {
@@ -256,8 +252,6 @@ LDAP* InitializeLDAPConnection(const char* dcAddress, BOOL useLdaps, char** outD
         return NULL;
     }
 
-    BeaconPrintf(CALLBACK_OUTPUT, "[+] Successfully bound to LDAP");
-    
     // Free discovered DC hostname if we allocated it
     if (discoveredDC) {
         MSVCRT$free(discoveredDC);

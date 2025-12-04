@@ -100,10 +100,6 @@ void go(char *args, int alen) {
         return;
     }
 
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Starting set UAC operation");
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Target: %s %s", targetIdentifier, isTargetDN ? "(DN)" : "(name)");
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Flags to set: %s", flagsValue);
-
     DWORD newUAC = ParseUACFlags(flagsValue);
     if (newUAC == 0) {
         BeaconPrintf(CALLBACK_ERROR, "[-] No valid flags parsed");
@@ -116,8 +112,6 @@ void go(char *args, int alen) {
         BeaconPrintf(CALLBACK_ERROR, "[!] Include NORMAL_ACCOUNT, WORKSTATION_TRUST_ACCOUNT, or SERVER_TRUST_ACCOUNT");
         return;
     }
-
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Parsed flags: 0x%08X", newUAC);
 
     char* dcHostname = NULL;
     LDAP* ld = InitializeLDAPConnection(dcAddress, useLdaps, &dcHostname);
@@ -152,7 +146,6 @@ void go(char *args, int alen) {
             CleanupLDAP(ld);
             return;
         }
-        BeaconPrintf(CALLBACK_OUTPUT, "[+] Target DN: %s", targetDN);
     }
 
     char uacString[32];
@@ -179,5 +172,4 @@ void go(char *args, int alen) {
     if (defaultNC) MSVCRT$free(defaultNC);
     if (dcHostname) MSVCRT$free(dcHostname);
     CleanupLDAP(ld);
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Operation complete");
 }

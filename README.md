@@ -20,8 +20,6 @@ Welcome to my ldap bof collection! Filled with many bofs of varying quality and 
 
 For full content and guidance, see the command reference.
 
-This will be mentioned again later, but deserves to be here as well. These bofs don't always play very well with stolen/forged tokens, in some environments they work fine, in others they don't work at all(when used with stolen/forged tokens).
-
 ## Requirements
 
 - **Adaptix C2 Framework**
@@ -269,7 +267,9 @@ All LDAP operations use the current beacon's security context. The toolkit autom
 - Negotiates signing/sealing for LDAP
 - Handles LDAPS certificate validation (accepts all)
 
-Because of this, it's important to note these bofs, much like ldapsearch, tend to handle sessions with stolen/forged tokens rather poorly.
+Something I discovered in testing that may or may not be relevant to you: 
+
+For some reason when acting on agents linked to eachother via smb or tcp tickets and tokens will stop working. I have not been able to find a solution, even after using `klist purge` and `rev2self` the agent still has issues when using bofs that need to operate in the context of the session.
 
 ### DN vs Username Detection
 Commands automatically detect input format:
