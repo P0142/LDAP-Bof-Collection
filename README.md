@@ -131,8 +131,8 @@ These macros simplify common AD exploitation techniques by wrapping multiple ope
 | `add-dcsync` | Grant DCSync permissions | `ldap add-dcsync {target} {trustee} [options]` |
 | `add-unconstrained` | Enable unconstrained delegation | `ldap add-unconstrained {target} [-ou {path}] [-dc {ip}] [--ldaps]` |
 | `add-constrained` | Configure constrained delegation | `ldap add-constrained {target} {spn} [-ou {path}] [-dc {ip}] [--ldaps]` |
-| `remove-genericall` | Remove GenericAll ACE | `ldap remove-genericall {target} [-trustee {trustee}] [options]` |
-| `remove-genericwrite` | Remove GenericWrite ACE | `ldap remove-genericwrite {target} [-trustee {trustee}] [options]` |
+| `remove-genericall` | Remove GenericAll ACE | `ldap remove-genericall {target} {trustee} [options]` |
+| `remove-genericwrite` | Remove GenericWrite ACE | `ldap remove-genericwrite {target} {trustee} [options]` |
 | `remove-dcsync` | Remove DCSync permissions | `ldap remove-dcsync {target} {trustee} [options]` |
 
 ## Usage Examples
@@ -317,8 +317,8 @@ ldap get-users -ou "OU=Employees,DC=corp,DC=local"
 
 ## Credits
 
-#### (Adaptix C2)[https://github.com/Adaptix-Framework/AdaptixC2]
-#### (bloodyAD)[https://github.com/CravateRouge/bloodyAD]
+#### [Adaptix C2](https://github.com/Adaptix-Framework/AdaptixC2)
+#### [bloodyAD](https://github.com/CravateRouge/bloodyAD)
 
 ## Disclaimer
 
