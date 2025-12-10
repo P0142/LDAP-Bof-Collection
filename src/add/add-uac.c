@@ -2,7 +2,6 @@
 #include "../../_include/beacon.h"
 #include "../common/ldap_common.c"
 
-DECLSPEC_IMPORT int __cdecl MSVCRT$_snprintf(char* buffer, size_t count, const char* format, ...);
 DECLSPEC_IMPORT long __cdecl MSVCRT$strtol(const char* str, char** endptr, int base);
 
 typedef struct {

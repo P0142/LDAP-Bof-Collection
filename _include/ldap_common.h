@@ -201,6 +201,7 @@ DECLSPEC_IMPORT ULONG WLDAP32$ldap_count_entries(LDAP* ld, LDAPMessage* res);
 DECLSPEC_IMPORT PCHAR WLDAP32$ldap_err2stringA(ULONG err);
 DECLSPEC_IMPORT struct berval** WLDAP32$ldap_get_values_len(LDAP* ld, LDAPMessage* entry, const PCHAR attr);
 DECLSPEC_IMPORT ULONG WLDAP32$ldap_value_free_len(struct berval** vals);
+DECLSPEC_IMPORT ULONG WLDAP32$ldap_extended_operation_sA(LDAP* ld, PCHAR Oid, struct berval* Data, PLDAPControlA* ServerControls, PLDAPControlA* ClientControls, PCHAR* ReturnedOid, struct berval** ReturnedData);
 
 // Shared function declarations
 char* GetDCHostName();

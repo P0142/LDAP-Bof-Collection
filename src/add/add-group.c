@@ -2,8 +2,6 @@
 #include "../../_include/beacon.h"
 #include "../common/ldap_common.c"
 
-DECLSPEC_IMPORT int __cdecl MSVCRT$_snprintf(char* buffer, size_t count, const char* format, ...);
-
 // Group type constants
 #define GROUP_TYPE_SECURITY_GLOBAL      -2147483646
 #define GROUP_TYPE_SECURITY_DOMAIN_LOCAL -2147483644

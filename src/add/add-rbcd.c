@@ -64,7 +64,6 @@ void go(char *args, int alen) {
     }
     
     // Initialize LDAP connection
-    BeaconPrintf(CALLBACK_OUTPUT, "\n[*] Initializing LDAP connection...");
     char* dcHostname = NULL;
     LDAP* ld = InitializeLDAPConnection(dcAddress, useLdaps, &dcHostname);
     if (!ld) {
@@ -132,7 +131,6 @@ void go(char *args, int alen) {
     }
     
     // Get principal's objectSid
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Retrieving principal's objectSid...");
     PSID pPrincipalSid = GetObjectSid(ld, principalDN);
     
     if (!pPrincipalSid) {
@@ -261,7 +259,6 @@ void go(char *args, int alen) {
     
     // Create new security descriptor
     BeaconPrintf(CALLBACK_OUTPUT, "[*] Building new RBCD security descriptor...");
-    
     BYTE absoluteSDBuffer[SECURITY_DESCRIPTOR_MIN_LENGTH];
     PSECURITY_DESCRIPTOR pNewSD = (PSECURITY_DESCRIPTOR)absoluteSDBuffer;
     

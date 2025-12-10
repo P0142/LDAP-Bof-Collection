@@ -2,8 +2,6 @@
 #include "../../_include/beacon.h"
 #include "../common/ldap_common.c"
 
-DECLSPEC_IMPORT int __cdecl MSVCRT$_snprintf(char* buffer, size_t count, const char* format, ...);
-
 void go(char *args, int alen) {
     datap parser;
     BeaconDataParse(&parser, args, alen);

@@ -13,6 +13,9 @@ DECLSPEC_IMPORT char* __cdecl MSVCRT$strcat(char* dest, const char* src);
 DECLSPEC_IMPORT char* __cdecl MSVCRT$strchr(const char *str, int c);
 DECLSPEC_IMPORT char* __cdecl MSVCRT$strstr(const char* str, const char* substr);
 DECLSPEC_IMPORT int __cdecl MSVCRT$_snprintf(char* buffer, size_t count, const char* format, ...);
+DECLSPEC_IMPORT int __cdecl MSVCRT$sprintf(char* buffer, const char* format, ...);
+DECLSPEC_IMPORT char* __cdecl MSVCRT$strtok(char* str, const char* delimiters);
+DECLSPEC_IMPORT int __cdecl MSVCRT$_stricmp(const char* str1, const char* str2);
 DECLSPEC_IMPORT void* __cdecl MSVCRT$malloc(size_t size);
 DECLSPEC_IMPORT void __cdecl MSVCRT$free(void* ptr);
 DECLSPEC_IMPORT void* __cdecl MSVCRT$memcpy(void* dest, const void* src, size_t count);
@@ -424,5 +427,114 @@ BERVAL* EncodePassword(const char* password) {
 void CleanupLDAP(LDAP* ld) {
     if (ld) {
         WLDAP32$ldap_unbind_s(ld);
+    }
+}
+
+// Convert binary GUID to string format
+void FormatGUID(BYTE* guidBytes, char* output) {
+    MSVCRT$sprintf(output, "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+        guidBytes[3], guidBytes[2], guidBytes[1], guidBytes[0],
+        guidBytes[5], guidBytes[4],
+        guidBytes[7], guidBytes[6],
+        guidBytes[8], guidBytes[9],
+        guidBytes[10], guidBytes[11], guidBytes[12], guidBytes[13], guidBytes[14], guidBytes[15]);
+}
+
+// Convert binary SID to string format (simplified - handles common SIDs)
+void FormatSID(BYTE* sidBytes, int length, char* output) {
+    if (length < 8) {
+        MSVCRT$sprintf(output, "(invalid SID)");
+        return;
+    }
+    
+    BYTE revision = sidBytes[0];
+    BYTE subAuthCount = sidBytes[1];
+    
+    // Authority (6 bytes, big-endian)
+    unsigned long long authority = 0;
+    for (int i = 0; i < 6; i++) {
+        authority = (authority << 8) | sidBytes[2 + i];
+    }
+    
+    // Start building the SID string
+    int pos = MSVCRT$sprintf(output, "S-%d-%llu", revision, authority);
+    
+    // SubAuthorities (32-bit values, little-endian)
+    for (int i = 0; i < subAuthCount && (8 + i * 4 + 3) < length; i++) {
+        unsigned long subAuth = 
+            (unsigned long)sidBytes[8 + i * 4] |
+            ((unsigned long)sidBytes[8 + i * 4 + 1] << 8) |
+            ((unsigned long)sidBytes[8 + i * 4 + 2] << 16) |
+            ((unsigned long)sidBytes[8 + i * 4 + 3] << 24);
+        pos += MSVCRT$sprintf(output + pos, "-%lu", subAuth);
+    }
+}
+
+// Build attribute list from comma-separated string
+// Returns number of attributes in the array
+int BuildAttributeList(char* attributesStr, char** defaultAttrs, int defaultCount, char** attrs, int maxAttrs) {
+    int attrCount = 0;
+    
+    // Always include sAMAccountName
+    attrs[attrCount++] = "sAMAccountName";
+    
+    // If attributes specified, parse comma-separated list
+    if (attributesStr && MSVCRT$strlen(attributesStr) > 0) {
+        char* token = MSVCRT$strtok(attributesStr, ",");
+        while (token != NULL && attrCount < (maxAttrs - 1)) {
+            // Trim leading spaces
+            while (*token == ' ') token++;
+            // Skip if it's sAMAccountName (already added)
+            if (MSVCRT$_stricmp(token, "sAMAccountName") != 0) {
+                attrs[attrCount++] = token;
+            }
+            token = MSVCRT$strtok(NULL, ",");
+        }
+    } else if (defaultAttrs) {
+        // Add default attributes if provided and no custom attributes
+        for (int i = 0; i < defaultCount && attrCount < (maxAttrs - 1); i++) {
+            attrs[attrCount++] = defaultAttrs[i];
+        }
+    }
+    
+    attrs[attrCount] = NULL;
+    return attrCount;
+}
+
+// Display attribute value (handles both string and binary attributes)
+void DisplayAttributeValue(LDAP* ld, LDAPMessage* entry, const char* attrName) {
+    // Check if this is a known binary attribute (case-insensitive)
+    BOOL isBinary = (MSVCRT$_stricmp(attrName, "objectGUID") == 0 || 
+                    MSVCRT$_stricmp(attrName, "objectSid") == 0 ||
+                    MSVCRT$_stricmp(attrName, "objectSID") == 0);
+    
+    if (isBinary) {
+        // Handle binary attributes
+        struct berval** bvalues = WLDAP32$ldap_get_values_len(ld, entry, (char*)attrName);
+        if (bvalues && bvalues[0]) {
+            for (int j = 0; bvalues[j] != NULL; j++) {
+                char formatted[256];
+                if (MSVCRT$_stricmp(attrName, "objectGUID") == 0) {
+                    FormatGUID((BYTE*)bvalues[j]->bv_val, formatted);
+                    BeaconPrintf(CALLBACK_OUTPUT, "%s: %s", attrName, formatted);
+                } else if (MSVCRT$_stricmp(attrName, "objectSid") == 0 || 
+                           MSVCRT$_stricmp(attrName, "objectSID") == 0) {
+                    FormatSID((BYTE*)bvalues[j]->bv_val, bvalues[j]->bv_len, formatted);
+                    BeaconPrintf(CALLBACK_OUTPUT, "%s: %s", attrName, formatted);
+                }
+            }
+            WLDAP32$ldap_value_free_len(bvalues);
+        }
+    } else {
+        // Handle string attributes
+        char** values = WLDAP32$ldap_get_values(ld, entry, (char*)attrName);
+        if (values && values[0]) {
+            BeaconPrintf(CALLBACK_OUTPUT, "%s: %s", attrName, values[0]);
+            // Print additional values if multi-valued
+            for (int j = 1; values[j] != NULL; j++) {
+                BeaconPrintf(CALLBACK_OUTPUT, "%s: %s", attrName, values[j]);
+            }
+            WLDAP32$ldap_value_free(values);
+        }
     }
 }

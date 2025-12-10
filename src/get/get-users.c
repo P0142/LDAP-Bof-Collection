@@ -2,16 +2,15 @@
 #include "../../_include/beacon.h"
 #include "../common/ldap_common.c"
 
-DECLSPEC_IMPORT int __cdecl MSVCRT$_snprintf(char* buffer, size_t count, const char* format, ...);
-
 void go(char *args, int alen) {
     datap parser;
     BeaconDataParse(&parser, args, alen);
 
-    // Parse arguments: search_ou, dc_address, use_ldaps
+    // Parse arguments: search_ou, dc_address, use_ldaps, attributes
     char* searchOu = ValidateInput(BeaconDataExtract(&parser, NULL));
     char* dcAddress = ValidateInput(BeaconDataExtract(&parser, NULL));
     int useLdaps = BeaconDataInt(&parser);
+    char* attributesStr = ValidateInput(BeaconDataExtract(&parser, NULL));
 
     // Initialize LDAP connection
     char* dcHostname = NULL;
@@ -32,9 +31,13 @@ void go(char *args, int alen) {
 
     char* searchBase = (searchOu && MSVCRT$strlen(searchOu) > 0) ? searchOu : defaultNC;
 
+    // Build attribute list
+    char* attrs[64];
+    char* defaultAttrs[] = { "distinguishedName" };
+    int attrCount = BuildAttributeList(attributesStr, defaultAttrs, 1, attrs, 64);
+
     // Search for user objects
     LDAPMessage* searchResult = NULL;
-    char* attrs[] = { "sAMAccountName", "distinguishedName", NULL };
 
     ULONG result = WLDAP32$ldap_search_s(
         ld,
@@ -59,18 +62,13 @@ void go(char *args, int alen) {
     BeaconPrintf(CALLBACK_OUTPUT, "[+] Found %d user(s):\n", userCount);
 
     LDAPMessage* entry = WLDAP32$ldap_first_entry(ld, searchResult);
-    BeaconPrintf(CALLBACK_OUTPUT, "%-20s %s", "sAMAccountName", "DistinguishedName");
-    BeaconPrintf(CALLBACK_OUTPUT, "===================================");
     while (entry != NULL) {
-        char** samValues = WLDAP32$ldap_get_values(ld, entry, "sAMAccountName");
-        char** dnValues = WLDAP32$ldap_get_values(ld, entry, "distinguishedName");
-
-        if (samValues && samValues[0] && dnValues) {
-            BeaconPrintf(CALLBACK_OUTPUT, "%-20s %s", samValues[0], dnValues[0]);
+        BeaconPrintf(CALLBACK_OUTPUT, "===================================");
+        
+        // Display all requested attributes
+        for (int i = 0; i < attrCount; i++) {
+            DisplayAttributeValue(ld, entry, attrs[i]);
         }
-
-        if (samValues) WLDAP32$ldap_value_free(samValues);
-        if (dnValues) WLDAP32$ldap_value_free(dnValues);
 
         entry = WLDAP32$ldap_next_entry(ld, entry);
     }

@@ -6,11 +6,9 @@ void go(char *args, int alen) {
     datap parser;
     BeaconDataParse(&parser, args, alen);
 
-    // Parse arguments: search_ou, dc_address, use_ldaps, attributes
-    char* searchOu = ValidateInput(BeaconDataExtract(&parser, NULL));
+    // Parse arguments: dc_address, use_ldaps
     char* dcAddress = ValidateInput(BeaconDataExtract(&parser, NULL));
     int useLdaps = BeaconDataInt(&parser);
-    char* attributesStr = ValidateInput(BeaconDataExtract(&parser, NULL));
 
     // Initialize LDAP connection
     char* dcHostname = NULL;
@@ -29,48 +27,40 @@ void go(char *args, int alen) {
         return;
     }
 
-    char* searchBase = (searchOu && MSVCRT$strlen(searchOu) > 0) ? searchOu : defaultNC;
-
-    // Build attribute list
-    char* attrs[64];
-    char* defaultAttrs[] = { "distinguishedName", "operatingSystem" };
-    int attrCount = BuildAttributeList(attributesStr, defaultAttrs, 2, attrs, 64);
-
-    // Search for computer objects
+    // Query domain object for ms-DS-MachineAccountQuota attribute
     LDAPMessage* searchResult = NULL;
+    char* attrs[] = { "ms-DS-MachineAccountQuota", NULL };
 
     ULONG result = WLDAP32$ldap_search_s(
         ld,
-        searchBase,
-        LDAP_SCOPE_SUBTREE,
-        "(objectClass=computer)",
+        defaultNC,
+        LDAP_SCOPE_BASE,
+        "(objectClass=*)",
         attrs,
         0,
         &searchResult
     );
 
     if (result != LDAP_SUCCESS) {
-        BeaconPrintf(CALLBACK_ERROR, "[-] Failed to search for computers");
-        PrintLdapError("Search computers", result);
+        BeaconPrintf(CALLBACK_ERROR, "[-] Failed to query machine account quota");
+        PrintLdapError("Query MAQ", result);
         MSVCRT$free(defaultNC);
         if (dcHostname) MSVCRT$free(dcHostname);
         CleanupLDAP(ld);
         return;
     }
 
-    int compCount = WLDAP32$ldap_count_entries(ld, searchResult);
-    BeaconPrintf(CALLBACK_OUTPUT, "[+] Found %d computer(s):\n", compCount);
-
     LDAPMessage* entry = WLDAP32$ldap_first_entry(ld, searchResult);
-    while (entry != NULL) {
-        BeaconPrintf(CALLBACK_OUTPUT, "===================================");
-        
-        // Display all requested attributes
-        for (int i = 0; i < attrCount; i++) {
-            DisplayAttributeValue(ld, entry, attrs[i]);
+    if (entry) {
+        char** maqValues = WLDAP32$ldap_get_values(ld, entry, "ms-DS-MachineAccountQuota");
+        if (maqValues && maqValues[0]) {
+            BeaconPrintf(CALLBACK_OUTPUT, "[+] Machine Account Quota (ms-DS-MachineAccountQuota): %s", maqValues[0]);
+            WLDAP32$ldap_value_free(maqValues);
+        } else {
+            BeaconPrintf(CALLBACK_OUTPUT, "[*] Machine Account Quota attribute not found or not set");
         }
-
-        entry = WLDAP32$ldap_next_entry(ld, entry);
+    } else {
+        BeaconPrintf(CALLBACK_ERROR, "[-] No results returned");
     }
 
     WLDAP32$ldap_msgfree(searchResult);

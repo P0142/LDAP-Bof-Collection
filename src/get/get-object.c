@@ -2,50 +2,6 @@
 #include "../../_include/beacon.h"
 #include "../common/ldap_common.c"
 
-DECLSPEC_IMPORT int __cdecl MSVCRT$_snprintf(char* buffer, size_t count, const char* format, ...);
-DECLSPEC_IMPORT int __cdecl MSVCRT$sprintf(char* buffer, const char* format, ...);
-DECLSPEC_IMPORT int __cdecl MSVCRT$_stricmp(const char* str1, const char* str2);
-
-// Convert binary GUID to string format
-void FormatGUID(BYTE* guidBytes, char* output) {
-    MSVCRT$sprintf(output, "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
-        guidBytes[3], guidBytes[2], guidBytes[1], guidBytes[0],
-        guidBytes[5], guidBytes[4],
-        guidBytes[7], guidBytes[6],
-        guidBytes[8], guidBytes[9],
-        guidBytes[10], guidBytes[11], guidBytes[12], guidBytes[13], guidBytes[14], guidBytes[15]);
-}
-
-// Convert binary SID to string format (simplified - handles common SIDs)
-void FormatSID(BYTE* sidBytes, int length, char* output) {
-    if (length < 8) {
-        MSVCRT$sprintf(output, "(invalid SID)");
-        return;
-    }
-    
-    BYTE revision = sidBytes[0];
-    BYTE subAuthCount = sidBytes[1];
-    
-    // Authority (6 bytes, big-endian)
-    unsigned long long authority = 0;
-    for (int i = 0; i < 6; i++) {
-        authority = (authority << 8) | sidBytes[2 + i];
-    }
-    
-    // Start building the SID string
-    int pos = MSVCRT$sprintf(output, "S-%d-%llu", revision, authority);
-    
-    // SubAuthorities (32-bit values, little-endian)
-    for (int i = 0; i < subAuthCount && (8 + i * 4 + 3) < length; i++) {
-        unsigned long subAuth = 
-            (unsigned long)sidBytes[8 + i * 4] |
-            ((unsigned long)sidBytes[8 + i * 4 + 1] << 8) |
-            ((unsigned long)sidBytes[8 + i * 4 + 2] << 16) |
-            ((unsigned long)sidBytes[8 + i * 4 + 3] << 24);
-        pos += MSVCRT$sprintf(output + pos, "-%lu", subAuth);
-    }
-}
-
 void go(char *args, int alen) {
     datap parser;
     BeaconDataParse(&parser, args, alen);

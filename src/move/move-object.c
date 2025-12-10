@@ -2,9 +2,6 @@
 #include "../../_include/beacon.h"
 #include "../common/ldap_common.c"
 
-// Import additional MSVCRT functions needed
-DECLSPEC_IMPORT int __cdecl MSVCRT$_snprintf(char* buffer, size_t count, const char* format, ...);
-
 // Import ldap_rename_ext_s function (the actual export name)
 // ldap_rename_s is a macro that maps to ldap_rename_ext_s
 DECLSPEC_IMPORT ULONG WLDAP32$ldap_rename_ext_s(

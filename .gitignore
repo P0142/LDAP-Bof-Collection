@@ -1,6 +1,8 @@
 # Compiled BOF object files
 _bin/
 
+wip/
+
 # IDE and editor folders
 .vscode/
 .idea/
