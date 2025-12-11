@@ -2,8 +2,6 @@
 #include "../../_include/beacon.h"
 #include "../common/ldap_common.c"
 
-// Import ldap_rename_ext_s function (the actual export name)
-// ldap_rename_s is a macro that maps to ldap_rename_ext_s
 DECLSPEC_IMPORT ULONG WLDAP32$ldap_rename_ext_s(
     LDAP* ld, 
     PCHAR dn, 

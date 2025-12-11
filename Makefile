@@ -6,7 +6,7 @@ CFLAGS = -I _include -Os -masm=intel -fno-stack-protector -mno-stack-arg-probe -
 all: bof
 
 bof: clean
-	@mkdir -p _bin/LDAP && echo '[*] Creating _bin directory'
+	@mkdir -p _bin/LDAP && echo '[*] Creating _bin/LDAP/ directory'
 	@echo '[*] Building GET commands...'
 	@$(CC) $(CFLAGS) -c src/get/get-users.c -o _bin/LDAP/get-users.x64.o && $(STRIP) --strip-unneeded _bin/LDAP/get-users.x64.o && echo '[+] get-users'
 	@$(CC) $(CFLAGS) -c src/get/get-computers.c -o _bin/LDAP/get-computers.x64.o && $(STRIP) --strip-unneeded _bin/LDAP/get-computers.x64.o && echo '[+] get-computers'
@@ -58,4 +58,4 @@ bof: clean
 	@echo '[*] Build complete!'
 
 clean:
-	@rm -rf _bin
+	@rm -rf _bin/LDAP

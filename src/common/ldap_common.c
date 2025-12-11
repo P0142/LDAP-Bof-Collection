@@ -2,7 +2,7 @@
 // This file should be #included in each BOF that uses these functions
 
 #include <windows.h>
-#include "ldap_common.h"
+#include "../../_include/ldap_common.h"
 
 // Import required MSVCRT functions
 DECLSPEC_IMPORT int __cdecl MSVCRT$strcmp(const char* str1, const char* str2);

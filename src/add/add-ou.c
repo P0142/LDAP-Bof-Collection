@@ -19,16 +19,6 @@ void go(char *args, int alen) {
         return;
     }
     
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] OU identifier: %s %s", ouIdentifier, isOuDN ? "(DN)" : "(name)");
-    
-    if (description && MSVCRT$strlen(description) > 0) {
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Description: %s", description);
-    }
-    
-    if (parentOu && MSVCRT$strlen(parentOu) > 0) {
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Parent OU: %s", parentOu);
-    }
-    
     // Initialize LDAP connection
     char* dcHostname = NULL;
     LDAP* ld = InitializeLDAPConnection(dcAddress, useLdaps, &dcHostname);
@@ -117,7 +107,6 @@ void go(char *args, int alen) {
     attrs[attrCount] = NULL;
     
     // Create the OU
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] Creating organizational unit...");
     ULONG result = WLDAP32$ldap_add_s(ld, ouDN, attrs);
     
     if (result == LDAP_SUCCESS) {
@@ -133,7 +122,7 @@ void go(char *args, int alen) {
         BeaconPrintf(CALLBACK_OUTPUT, "[*] The OU can now be used to organize objects:");
         BeaconPrintf(CALLBACK_OUTPUT, "[*]   ldap add-user username password -ou \"%s\"", ouDN);
         BeaconPrintf(CALLBACK_OUTPUT, "[*]   ldap add-computer computername -ou \"%s\"", ouDN);
-        BeaconPrintf(CALLBACK_OUTPUT, "[*]   ldap move-object object -ou \"%s\"", ouDN);
+        BeaconPrintf(CALLBACK_OUTPUT, "[*]   ldap move-object object \"%s\"", ouDN);
         
     } else {
         BeaconPrintf(CALLBACK_ERROR, "[-] Failed to create OU");

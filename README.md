@@ -63,6 +63,7 @@ help ldap {command}
 | `get-usergroups` | List groups a user belongs to | `ldap get-usergroups {user} [-ou {path}] [-dc {ip}] [--ldaps]` |
 | `get-groupmembers` | List members of a group | `ldap get-groupmembers {group} [-ou {path}] [-dc {ip}]` |
 | `get-object` | Dump all attributes of an object | `ldap get-object {target} [-ou {path}] [-dc {ip}] [--ldaps]` |
+| `get-maq` | Get the machine account quota | `ldap get-maq [-dc {ip}] [--ldaps]` |
 | `get-domaininfo` | Query domain information from rootDSE | `ldap get-domaininfo [-dc {ip}] [--ldaps]` |
 | `get-writable` | Find objects with write access | `ldap get-writable [-ou {path}] [-dc {ip}] [--ldaps] [--detailed]` |
 | `get-delegation` | View delegation configuration | `ldap get-delegation {target} [-ou {path}] [-dc {ip}] [--ldaps]` |

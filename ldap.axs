@@ -867,6 +867,7 @@ var _cmd_moveobject = ax.create_command(
 );
 _cmd_moveobject.addArgString("object", true, "Object name or DN to move");
 _cmd_moveobject.addArgString("destination", true, "Destination OU DN");
+_cmd_moveobject.addArgFlagString("-n", "newname", false, "New name for the object (optional)");
 _cmd_moveobject.addArgFlagString("-ou", "ou_path", false, "OU path to search for object");
 _cmd_moveobject.addArgFlagString("-dc", "dc_fqdn", false, "Domain Controller FQDN");
 _cmd_moveobject.addArgBool("--ldaps", "Use LDAPS (port 636)");
@@ -875,11 +876,12 @@ _cmd_moveobject.setPreHook(function (id, cmdline, parsed_json, ...parsed_lines){
     let object = parsed_json["object"];
     let is_dn = identifyInputType(object);
     let destination = parsed_json["destination"];
+    let newname = parsed_json["newname"] || "";
     let ou_path = parsed_json["ou_path"] || "";
     let dc_fqdn = parsed_json["dc_fqdn"] || "";
     let use_ldaps = parsed_json["--ldaps"] ? 1 : 0;
 
-    let bof_params = ax.bof_pack("cstr,int,cstr,cstr,cstr,int", [object, is_dn, destination, ou_path, dc_fqdn, use_ldaps]);
+    let bof_params = ax.bof_pack("cstr,int,cstr,cstr,cstr,cstr,int", [object, is_dn, destination, newname, ou_path, dc_fqdn, use_ldaps]);
     let bof_path = ax.script_dir() + "_bin/LDAP/move-object." + ax.arch(id) + ".o";
     ax.execute_alias(id, cmdline, `execute bof ${bof_path} ${bof_params}`, `Moving ${object} to ${destination}...`);
 });
