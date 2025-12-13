@@ -36,18 +36,53 @@ void go(char *args, int alen) {
     char* defaultAttrs[] = { "distinguishedName" };
     int attrCount = BuildAttributeList(attributesStr, defaultAttrs, 1, attrs, 64);
 
+    // Check if ntSecurityDescriptor is requested (case-insensitive)
+    BOOL needSDFlags = FALSE;
+    for (int i = 0; i < attrCount; i++) {
+        if (MSVCRT$_stricmp(attrs[i], "ntSecurityDescriptor") == 0) {
+            needSDFlags = TRUE;
+            break;
+        }
+    }
+
     // Search for group objects
     LDAPMessage* searchResult = NULL;
+    ULONG result;
 
-    ULONG result = WLDAP32$ldap_search_s(
-        ld,
-        searchBase,
-        LDAP_SCOPE_SUBTREE,
-        "(objectClass=group)",
-        attrs,
-        0,
-        &searchResult
-    );
+    if (needSDFlags) {
+        // Create SD_FLAGS control for ntSecurityDescriptor
+        DWORD sdFlags = OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION;
+        
+        char sdFlagsBuffer[10];
+        struct berval sdFlagsValue;
+        LDAPControlA* sdFlagsControl = BuildSDFlagsControl(sdFlags, sdFlagsBuffer, &sdFlagsValue);
+        
+        LDAPControlA* serverControls[] = { sdFlagsControl, NULL };
+
+        result = WLDAP32$ldap_search_ext_s(
+            ld,
+            searchBase,
+            LDAP_SCOPE_SUBTREE,
+            "(objectClass=group)",
+            attrs,
+            0,
+            serverControls,
+            NULL,           // ClientControls
+            NULL,           // timeout
+            0,              // SizeLimit
+            &searchResult
+        );
+    } else {
+        result = WLDAP32$ldap_search_s(
+            ld,
+            searchBase,
+            LDAP_SCOPE_SUBTREE,
+            "(objectClass=group)",
+            attrs,
+            0,
+            &searchResult
+        );
+    }
 
     if (result != LDAP_SUCCESS) {
         BeaconPrintf(CALLBACK_ERROR, "[-] Failed to search for groups");

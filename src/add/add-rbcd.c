@@ -15,12 +15,14 @@ void go(char *args, int alen) {
     int isTargetDN = BeaconDataInt(&parser);
     char* principalIdentifier = ValidateInput(BeaconDataExtract(&parser, NULL));
     int isPrincipalDN = BeaconDataInt(&parser);
-    char* accessMaskStr = ValidateInput(BeaconDataExtract(&parser, NULL));
-    char* aceTypeStr = ValidateInput(BeaconDataExtract(&parser, NULL));
+
     char* searchOu = ValidateInput(BeaconDataExtract(&parser, NULL));
     char* dcAddress = ValidateInput(BeaconDataExtract(&parser, NULL));
     int useLdaps = BeaconDataInt(&parser);
     
+    char* accessMaskStr = NULL;
+    char* aceTypeStr = NULL;
+
     if (!targetIdentifier || MSVCRT$strlen(targetIdentifier) == 0) {
         BeaconPrintf(CALLBACK_ERROR, "[-] Target identifier is required");
         return;

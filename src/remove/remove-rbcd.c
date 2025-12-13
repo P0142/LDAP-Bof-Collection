@@ -32,15 +32,17 @@ void go(char *args, int alen) {
     // access_mask (optional - 0 means remove all for principal),
     // clear_all (if true, remove entire RBCD attribute),
     // search_ou, dc_address, use_ldaps
+
     char* targetIdentifier = ValidateInput(BeaconDataExtract(&parser, NULL));
     int isTargetDN = BeaconDataInt(&parser);
     char* principalIdentifier = ValidateInput(BeaconDataExtract(&parser, NULL));
     int isPrincipalDN = BeaconDataInt(&parser);
-    char* accessMaskStr = ValidateInput(BeaconDataExtract(&parser, NULL));
-    int clearAll = BeaconDataInt(&parser);
     char* searchOu = ValidateInput(BeaconDataExtract(&parser, NULL));
     char* dcAddress = ValidateInput(BeaconDataExtract(&parser, NULL));
     int useLdaps = BeaconDataInt(&parser);
+
+    int clearAll = 0;
+    char* accessMaskStr = NULL;
     
     if (!targetIdentifier || MSVCRT$strlen(targetIdentifier) == 0) {
         BeaconPrintf(CALLBACK_ERROR, "[-] Target identifier is required");

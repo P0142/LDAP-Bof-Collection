@@ -3,6 +3,12 @@
 
 #include <windows.h>
 
+// LDAP timeval structure
+struct l_timeval {
+    LONG tv_sec;
+    LONG tv_usec;
+};
+
 // LDAP structures and constants
 typedef struct ldap {
     struct {
@@ -124,6 +130,9 @@ typedef BOOLEAN (*VERIFYSERVERCERT)(PLDAP Connection, PCCERT_CONTEXT pServerCert
 #define LDAP_SCOPE_ONELEVEL 0x01
 #define LDAP_SCOPE_SUBTREE 0x02
 
+// LDAP Server Controls
+#define LDAP_SERVER_SD_FLAGS_OID "1.2.840.113556.1.4.801"
+
 // User Account Control (UAC) flags
 // Reference: https://docs.microsoft.com/en-us/troubleshoot/windows-server/identity/useraccountcontrol-manipulate-account-properties
 #define UF_SCRIPT                           0x00000001  // Logon script executed
@@ -177,6 +186,18 @@ DECLSPEC_IMPORT DWORD WINAPI NETAPI32$DsGetDcNameA(
 
 DECLSPEC_IMPORT DWORD WINAPI NETAPI32$NetApiBufferFree(LPVOID Buffer);
 
+// KERNEL32 imports
+DECLSPEC_IMPORT HLOCAL WINAPI KERNEL32$LocalFree(HLOCAL hMem);
+
+// ADVAPI32 imports for security descriptor operations
+DECLSPEC_IMPORT BOOL WINAPI ADVAPI32$ConvertSecurityDescriptorToStringSecurityDescriptorA(
+    PSECURITY_DESCRIPTOR SecurityDescriptor,
+    DWORD RequestedStringSDRevision,
+    DWORD SecurityInformation,
+    LPSTR* StringSecurityDescriptor,
+    PULONG StringSecurityDescriptorLen
+);
+
 // LDAP API function imports - ANSI versions
 DECLSPEC_IMPORT LDAP* WLDAP32$ldap_init(PCHAR HostName, ULONG PortNumber);
 DECLSPEC_IMPORT ULONG WLDAP32$ldap_set_option(LDAP* ld, int option, const void* invalue);
@@ -188,6 +209,9 @@ DECLSPEC_IMPORT ULONG WLDAP32$ldap_modify_s(LDAP* ld, const PCHAR dn, LDAPModA**
 DECLSPEC_IMPORT ULONG WLDAP32$ldap_count_values(PCHAR *vals);
 DECLSPEC_IMPORT ULONG WLDAP32$ldap_delete_s(LDAP* ld, const PCHAR dn);
 DECLSPEC_IMPORT ULONG WLDAP32$ldap_search_s(LDAP* ld, const PCHAR base, ULONG scope, const PCHAR filter, PCHAR* attrs, ULONG attrsonly, LDAPMessage** res);
+DECLSPEC_IMPORT ULONG WLDAP32$ldap_search_ext_s(LDAP* ld, const PCHAR base, ULONG scope, const PCHAR filter, PCHAR* attrs, ULONG attrsonly, PLDAPControlA* ServerControls, PLDAPControlA* ClientControls, struct l_timeval* timeout, ULONG SizeLimit, LDAPMessage** res);
+DECLSPEC_IMPORT ULONG WLDAP32$ldap_create_page_control(LDAP* ld, ULONG PageSize, struct berval* Cookie, UCHAR IsCritical, PLDAPControlA* Control);
+DECLSPEC_IMPORT ULONG WLDAP32$ldap_control_freeA(LDAPControlA* Control);
 DECLSPEC_IMPORT LDAPMessage* WLDAP32$ldap_first_entry(LDAP* ld, LDAPMessage* res);
 DECLSPEC_IMPORT LDAPMessage* WLDAP32$ldap_next_entry(LDAP* ld, LDAPMessage* entry);
 DECLSPEC_IMPORT PCHAR* WLDAP32$ldap_get_values(LDAP* ld, LDAPMessage* entry, const PCHAR attr);
@@ -212,6 +236,7 @@ char* FindObjectDN(LDAP* ld, const char* samAccountName, const char* searchBase)
 void PrintLdapError(const char* context, ULONG ldapError);
 BERVAL* EncodePassword(const char* password);
 void CleanupLDAP(LDAP* ld);
+LDAPControlA* BuildSDFlagsControl(DWORD sdFlags, char* buffer, struct berval* bervalStorage);
 
 // Helper string conversion functions
 char* WCharToChar(const wchar_t* wstr);

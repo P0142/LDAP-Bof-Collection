@@ -430,6 +430,41 @@ void CleanupLDAP(LDAP* ld) {
     }
 }
 
+// Build SD_FLAGS control for security descriptor queries
+// Returns pointer to LDAPControlA structure, or NULL on error
+// Caller must provide buffer (at least 10 bytes) and berval storage
+LDAPControlA* BuildSDFlagsControl(DWORD sdFlags, char* buffer, struct berval* bervalStorage) {
+    if (!buffer || !bervalStorage) return NULL;
+    
+    static LDAPControlA sdFlagsControl;
+    int bufferPos = 0;
+    
+    // BER-encode the SD_FLAGS value
+    // SEQUENCE tag
+    buffer[bufferPos++] = 0x30;
+    // SEQUENCE length (will be filled later)
+    int seqLenPos = bufferPos++;
+    
+    // INTEGER tag
+    buffer[bufferPos++] = 0x02;
+    // INTEGER length = 1 byte
+    buffer[bufferPos++] = 0x01;
+    // INTEGER value (only using low byte for flags)
+    buffer[bufferPos++] = (char)(sdFlags & 0xFF);
+    
+    // Set SEQUENCE length
+    buffer[seqLenPos] = (char)(bufferPos - seqLenPos - 1);
+    
+    bervalStorage->bv_len = bufferPos;
+    bervalStorage->bv_val = buffer;
+    
+    sdFlagsControl.ldctl_oid = LDAP_SERVER_SD_FLAGS_OID;
+    sdFlagsControl.ldctl_value = *bervalStorage;
+    sdFlagsControl.ldctl_iscritical = TRUE;
+    
+    return &sdFlagsControl;
+}
+
 // Convert binary GUID to string format
 void FormatGUID(BYTE* guidBytes, char* output) {
     MSVCRT$sprintf(output, "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
@@ -506,7 +541,8 @@ void DisplayAttributeValue(LDAP* ld, LDAPMessage* entry, const char* attrName) {
     // Check if this is a known binary attribute (case-insensitive)
     BOOL isBinary = (MSVCRT$_stricmp(attrName, "objectGUID") == 0 || 
                     MSVCRT$_stricmp(attrName, "objectSid") == 0 ||
-                    MSVCRT$_stricmp(attrName, "objectSID") == 0);
+                    MSVCRT$_stricmp(attrName, "objectSID") == 0 ||
+                    MSVCRT$_stricmp(attrName, "ntSecurityDescriptor") == 0);
     
     if (isBinary) {
         // Handle binary attributes
@@ -521,9 +557,39 @@ void DisplayAttributeValue(LDAP* ld, LDAPMessage* entry, const char* attrName) {
                            MSVCRT$_stricmp(attrName, "objectSID") == 0) {
                     FormatSID((BYTE*)bvalues[j]->bv_val, bvalues[j]->bv_len, formatted);
                     BeaconPrintf(CALLBACK_OUTPUT, "%s: %s", attrName, formatted);
+                } else if (MSVCRT$_stricmp(attrName, "ntSecurityDescriptor") == 0) {
+                    // Convert binary security descriptor to SDDL string
+                    LPSTR sddlString = NULL;
+                    ULONG sddlLen = 0;
+                    
+                    // Convert to SDDL format (Owner, Group, DACL, SACL)
+                    if (ADVAPI32$ConvertSecurityDescriptorToStringSecurityDescriptorA(
+                            (PSECURITY_DESCRIPTOR)bvalues[j]->bv_val,
+                            1,  // SDDL_REVISION_1
+                            OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | 
+                            DACL_SECURITY_INFORMATION | SACL_SECURITY_INFORMATION,
+                            &sddlString,
+                            &sddlLen)) {
+                        BeaconPrintf(CALLBACK_OUTPUT, "%s: %s", attrName, sddlString);
+                        KERNEL32$LocalFree(sddlString);
+                    } else {
+                        // Fallback to hex display if SDDL conversion fails
+                        int displayLen = bvalues[j]->bv_len < 32 ? bvalues[j]->bv_len : 32;
+                        char hexStr[256] = {0};
+                        int pos = 0;
+                        for (int k = 0; k < displayLen && pos < sizeof(hexStr) - 3; k++) {
+                            pos += MSVCRT$_snprintf(hexStr + pos, sizeof(hexStr) - pos, "%02x", (BYTE)bvalues[j]->bv_val[k]);
+                        }
+                        if (bvalues[j]->bv_len > displayLen) {
+                            MSVCRT$_snprintf(hexStr + pos, sizeof(hexStr) - pos, "... (%d bytes total)", bvalues[j]->bv_len);
+                        }
+                        BeaconPrintf(CALLBACK_OUTPUT, "%s: %s", attrName, hexStr);
+                    }
                 }
             }
             WLDAP32$ldap_value_free_len(bvalues);
+        } else {
+            BeaconPrintf(CALLBACK_OUTPUT, "%s: <not found>", attrName);
         }
     } else {
         // Handle string attributes
@@ -535,6 +601,8 @@ void DisplayAttributeValue(LDAP* ld, LDAPMessage* entry, const char* attrName) {
                 BeaconPrintf(CALLBACK_OUTPUT, "%s: %s", attrName, values[j]);
             }
             WLDAP32$ldap_value_free(values);
+        } else {
+            BeaconPrintf(CALLBACK_OUTPUT, "%s: <not found>", attrName);
         }
     }
 }

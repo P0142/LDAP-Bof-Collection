@@ -32,15 +32,27 @@ BERVAL* ReadSecurityDescriptor(LDAP* ld, const char* objectDN) {
     struct berval** values = NULL;
     BERVAL* sdBerval = NULL;
 
-    // Search for the object with ntSecurityDescriptor attribute
-    // Must use LDAP_SCOPE_BASE and search on exact DN
-    ULONG result = WLDAP32$ldap_search_s(
+    // Create SD_FLAGS control to request OWNER, GROUP, and DACL
+    DWORD sdFlags = OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION;
+    
+    char sdFlagsBuffer[10];
+    struct berval sdFlagsValue;
+    LDAPControlA* sdFlagsControl = BuildSDFlagsControl(sdFlags, sdFlagsBuffer, &sdFlagsValue);
+    
+    LDAPControlA* serverControls[] = { sdFlagsControl, NULL };
+
+    // Search for the object with ntSecurityDescriptor attribute using the SD_FLAGS control
+    ULONG result = WLDAP32$ldap_search_ext_s(
         ld,
         (char*)objectDN,
         LDAP_SCOPE_BASE,
         "(objectClass=*)",
         attrs,
         0,
+        serverControls,
+        NULL,           // ClientControls
+        NULL,           // timeout
+        0,              // SizeLimit
         &searchResult
     );
 
@@ -796,16 +808,44 @@ PSID StringToSid(const char* sidString) {
 char* ResolveSidToName(LDAP* ld, const char* sidString, const char* defaultNC) {
     if (!ld || !sidString || !defaultNC) return NULL;
 
-    // Build LDAP filter to search by objectSid
-    char filter[256];
-    MSVCRT$_snprintf(filter, sizeof(filter), "(objectSid=%s)", sidString);
+    // Convert SID string to binary SID
+    PSID pSid = StringToSid(sidString);
+    if (!pSid) return NULL;
 
-    char* attrs[] = { "sAMAccountName", "name", NULL };
+    // Get the SID length
+    DWORD sidLen = ADVAPI32$GetLengthSid(pSid);
+    if (sidLen == 0) {
+        KERNEL32$LocalFree(pSid);
+        return NULL;
+    }
+
+    // Build LDAP filter with escaped binary SID
+    // Format: (objectSid=\xx\xx\xx...) where xx is hex byte
+    char filter[512];
+    int filterPos = 0;
+    
+    // Start filter
+    filterPos += MSVCRT$_snprintf(filter + filterPos, sizeof(filter) - filterPos, "(objectSid=");
+    
+    // Add escaped binary bytes
+    BYTE* sidBytes = (BYTE*)pSid;
+    for (DWORD i = 0; i < sidLen && filterPos < sizeof(filter) - 4; i++) {
+        filterPos += MSVCRT$_snprintf(filter + filterPos, sizeof(filter) - filterPos, "\\%02x", sidBytes[i]);
+    }
+    
+    // Close filter
+    filterPos += MSVCRT$_snprintf(filter + filterPos, sizeof(filter) - filterPos, ")");
+
+    // Free the SID
+    KERNEL32$LocalFree(pSid);
+
+    char* attrs[] = { "sAMAccountName", "name", "cn", NULL };
     LDAPMessage* searchResult = NULL;
     LDAPMessage* entry = NULL;
     char** values = NULL;
     char* name = NULL;
 
+    // Try searching in the default NC first
     ULONG result = WLDAP32$ldap_search_s(
         ld,
         (char*)defaultNC,
@@ -822,7 +862,13 @@ char* ResolveSidToName(LDAP* ld, const char* sidString, const char* defaultNC) {
             // Try sAMAccountName first
             values = WLDAP32$ldap_get_values(ld, entry, "sAMAccountName");
             if (!values || !values[0]) {
+                // Fall back to cn attribute
+                if (values) WLDAP32$ldap_value_free(values);
+                values = WLDAP32$ldap_get_values(ld, entry, "cn");
+            }
+            if (!values || !values[0]) {
                 // Fall back to name attribute
+                if (values) WLDAP32$ldap_value_free(values);
                 values = WLDAP32$ldap_get_values(ld, entry, "name");
             }
             
@@ -836,6 +882,62 @@ char* ResolveSidToName(LDAP* ld, const char* sidString, const char* defaultNC) {
             }
         }
         WLDAP32$ldap_msgfree(searchResult);
+    }
+
+    // If not found in default NC, try searching from root (for cross-domain SIDs like Enterprise Admins)
+    if (!name) {
+        // Extract forest root from default NC
+        // E.g., DC=child,DC=parent,DC=local -> DC=parent,DC=local
+        char* forestRoot = NULL;
+        const char* firstComma = MSVCRT$strstr(defaultNC, ",");
+        if (firstComma) {
+            const char* secondComma = MSVCRT$strstr(firstComma + 1, ",");
+            if (secondComma) {
+                // We're in a child domain, try searching from parent
+                forestRoot = (char*)(firstComma + 1);
+            }
+        }
+        
+        // If we found a potential forest root, search there
+        if (forestRoot) {
+            result = WLDAP32$ldap_search_s(
+                ld,
+                forestRoot,
+                LDAP_SCOPE_SUBTREE,
+                filter,
+                attrs,
+                0,
+                &searchResult
+            );
+
+            if (result == LDAP_SUCCESS) {
+                entry = WLDAP32$ldap_first_entry(ld, searchResult);
+                if (entry) {
+                    // Try sAMAccountName first
+                    values = WLDAP32$ldap_get_values(ld, entry, "sAMAccountName");
+                    if (!values || !values[0]) {
+                        // Fall back to cn attribute
+                        if (values) WLDAP32$ldap_value_free(values);
+                        values = WLDAP32$ldap_get_values(ld, entry, "cn");
+                    }
+                    if (!values || !values[0]) {
+                        // Fall back to name attribute
+                        if (values) WLDAP32$ldap_value_free(values);
+                        values = WLDAP32$ldap_get_values(ld, entry, "name");
+                    }
+                    
+                    if (values && values[0]) {
+                        size_t len = MSVCRT$strlen(values[0]) + 1;
+                        name = (char*)MSVCRT$malloc(len);
+                        if (name) {
+                            MSVCRT$strcpy(name, values[0]);
+                        }
+                        WLDAP32$ldap_value_free(values);
+                    }
+                }
+                WLDAP32$ldap_msgfree(searchResult);
+            }
+        }
     }
 
     return name;
